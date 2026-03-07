@@ -33,7 +33,7 @@ The project is built on a **Modular Feature Architecture**, emphasizing strict s
 
 To set up the Lohia Farm environment locally for testing, follow these steps:
 
-# 1. Clone this repository (go to Code green button to get more help)
+1. Clone this repository (go to Code green button to get more help)
 
 ```bash
 # 2. Install dependencies in project root
@@ -42,4 +42,4 @@ npm install
 # 3. Launch the development server
 npm run dev
 
-# 3. Test and make changes as you wish!
+# 4. Test and make changes as you wish!
