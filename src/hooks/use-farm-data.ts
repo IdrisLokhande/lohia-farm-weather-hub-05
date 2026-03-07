@@ -16,7 +16,7 @@ export const useFarmData = () => {
     const timeoutId = setTimeout(() => controller.abort(), 2000); 
 
     try {
-      const response = await fetch("http://192.168.4.1/api/weather", {
+      const response = await fetch("https://192.168.4.1/api/weather", {
         signal: controller.signal 
       });
       
