@@ -18,27 +18,27 @@ const SystemStatus = ({ status }: SystemStatusProps) => {
       </div>
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
             <Wifi className="h-4 w-4" />
             Sensors
           </div>
-          <span className={`text-sm font-semibold ${allOnline ? "text-status-good" : "text-status-moderate"}`}>
+          <span className={`text-sm font-semibold text-right ${allOnline ? "text-status-good" : "text-status-moderate"}`}>
             {status.sensorsOnline}/{status.totalSensors} Online
           </span>
         </div>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
             <Clock className="h-4 w-4" />
             Last Update
           </div>
-          <span className="text-sm font-semibold text-foreground">{status.lastUpdate}</span>
+          <span className="text-sm font-semibold text-right text-foreground">{status.lastUpdate}</span>
         </div>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
             <Activity className="h-4 w-4" />
             Uptime
           </div>
-          <span className="text-sm font-semibold text-status-good">{status.uptime}</span>
+          <span className="text-sm font-semibold text-right text-status-good">{status.uptime}</span>
         </div>
       </div>
     </div>

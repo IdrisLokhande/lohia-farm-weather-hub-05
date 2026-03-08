@@ -2,7 +2,7 @@ import useSWR from 'swr';
 
 const fetcher = async (url: string) => {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 2000);
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
   try {
     const response = await fetch(url, { signal: controller.signal });
     if (!response.ok) throw new Error("Offline");
@@ -14,9 +14,12 @@ const fetcher = async (url: string) => {
   }
 };
 
+const isDev = true;
+const point = isDev ? "http://localhost:8080/api/weather" : "http://192.168.4.1/api/status";
+
 export const useFarmData = () => {
-  const { data, error, isLoading } = useSWR("http://192.168.4.1/api/weather", fetcher, {
-    refreshInterval: 3000,
+  const { data, error, isLoading } = useSWR(point, fetcher, {
+    refreshInterval: 10000,
     shouldRetryOnError: true,
     errorRetryInterval: 2000,
   });

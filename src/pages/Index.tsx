@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { TrendingUp, WifiOff, RefreshCcw, AlertTriangle } from "lucide-react"; 
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import HeroSection from "@/components/dashboard/HeroSection";
@@ -8,26 +8,106 @@ import SystemStatus from "@/components/dashboard/SystemStatus";
 import DashboardFooter from "@/components/dashboard/DashboardFooter";
 import { getFarmData } from "@/lib/farmData";
 import { useFarmData } from "@/hooks/use-farm-data"; 
+import { useHealthCheck } from "@/hooks/use-health-check";
+import { WeatherPhysics } from "@/lib/weather-physics";
 
 const Index = () => {
   const [isDark, setIsDark] = useState(true);
-  const { liveData, error } = useFarmData(); 
+  
+  // 1. Call BOTH hooks at the top level
+  const { liveData, error: farmError } = useFarmData(); 
+  const { status: liveHealth, isOffline: healthError } = useHealthCheck();
+
+  // 2. Memoize the combined data object
+  const data = useMemo(() => {
+    const baseData = getFarmData();
+
+    // 3. Map System Status from the liveHealth hook
+    baseData.systemStatus = liveHealth;
+
+    // 4. Map Environmental Data from the liveData hook
+    if (liveData) {
+      // 1. Map CO2 with Partial Pressure description
+      if (liveData.co2) {
+        const currentCO2 = Number(liveData.co2 || 0);
+        const currentTotPressure = Number(liveData.pressure || 0);
+        baseData.co2.value = currentCO2;
+        baseData.co2.description = `Crops feel CO2 Partial Pressure of ${WeatherPhysics.getCO2PartialPressure(currentCO2, currentTotPressure).toFixed(1)} hPa`;
+      }
+
+      // 2. Map Triple AQI Values
+      if (liveData.aqi2_5 || liveData.aqi5_0 || liveData.aqi10_0) {
+        const a25 = Number(liveData.aqi2_5 || 0);
+        const a50 = Number(liveData.aqi5_0 || 0);
+        const a100 = Number(liveData.aqi10_0 || 0);
+
+        // Calculate Major Pollutant string
+        const maxVal = Math.max(a25, a50, a100);
+        let major = "None";
+        if (maxVal === a25) major = "PM2.5 (Fine Particles/Smoke)";
+        else if (maxVal === a50) major = "PM5.0 (Mid-range Dust)";
+        else if (maxVal === a100) major = "PM10.0 (Coarse Dust)";
+
+        // Inject the ReactNode into the value field
+        baseData.airQuality.value = (
+          <div className="flex items-center gap-4 py-0">
+            <div className="flex flex-col">
+              <span className="text-3xl font-bold leading-none">{a25}</span>
+              <span className="mt-0.5 text-[12px] font-medium uppercase tracking-tighter text-muted-foreground">PM2.5</span>
+            </div>
+            <div className="h-6 w-[1px] bg-border/50" /> 
+            <div className="flex flex-col">
+              <span className="text-3xl font-bold leading-none">{a50}</span>
+              <span className="mt-0.5 text-[12px] font-medium uppercase tracking-tighter text-muted-foreground">PM5.0</span>
+            </div>
+            <div className="h-6 w-[1px] bg-border/50" />
+            <div className="flex flex-col">
+              <span className="text-3xl font-bold leading-none">{a100}</span>
+              <span className="mt-0.5 text-[12px] font-medium uppercase tracking-tighter text-muted-foreground">PM10.0</span>
+            </div>
+          </div>
+        );
+
+        baseData.airQuality.description = `Major Pollutant seems to be ${major}`;
+      }
+    
+      const currentTemp = Number(liveData.temp || 0);
+      const currentHumidity = Number(liveData.humidity || 0);	
+      const currentTotPressure = Number(liveData.pressure || 0);
+
+      baseData.environment.temperature.value = currentTemp;
+      baseData.environment.humidity.value = currentHumidity;
+      baseData.environment.pressure.value = currentTotPressure;
+      
+      // Update descriptions
+      baseData.environment.temperature.description = `Feels like ${WeatherPhysics.getFeelsLike(currentTemp, currentHumidity).toFixed(1)} °C`;
+      baseData.environment.humidity.description = `Absolute Humidity is ${WeatherPhysics.getAbsoluteHumidity(currentTemp, currentHumidity).toFixed(1)} g/m³`;
+      baseData.environment.pressure.description = `Crops feel Vapor Pressure of ${WeatherPhysics.getVaporPressure(currentTemp, currentHumidity).toFixed(1)} hPa`;
+
+      /*
+      // Set statuses to active
+      baseData.environment.temperature.status = "good";
+      baseData.environment.humidity.status = "good";
+      baseData.environment.pressure.status = "good";
+      */
+    } else {
+      // Mark sensors as offline if the weather data feed fails
+      const sensors = [
+        baseData.environment.temperature,
+        baseData.environment.humidity,
+        baseData.environment.pressure,
+        baseData.co2,
+        baseData.airQuality
+      ];
+      sensors.forEach(s => s.status = "offline");
+    }
+
+    return baseData;
+  }, [liveData, liveHealth]); // Re-calcs if either hook fetches new data
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDark);
   }, [isDark]);
-
-  // 1. Get base labels/icons from your lib
-  const data = getFarmData();
-
-  // 2. Update Metric values IF we are online
-  if (liveData) {
-    data.environment.temperature.value = liveData.temp;
-    data.environment.humidity.value = liveData.humidity;
-    data.systemStatus.status = "online";
-  } else {
-    data.systemStatus.status = "offline";
-  }
 
   // 3. Reusable Placeholder for the charts
   const OfflinePlaceholder = ({ title }: { title: string }) => (
@@ -46,7 +126,7 @@ const Index = () => {
     <DashboardHeader isDark={isDark} onToggleTheme={() => setIsDark(!isDark)} />
     
     {/* 2. Alert now sits neatly below the header */}
-    {error && (
+    {farmError && (
       <div className="bg-destructive text-destructive-foreground py-2 px-4 text-center flex items-center justify-center gap-2 border-b border-white/10 shadow-sm animate-in slide-in-from-top-1">
         <WifiOff size={14} className="opacity-90" />
         <span className="font-bold uppercase tracking-widest text-[10px] md:text-xs">
@@ -76,7 +156,7 @@ const Index = () => {
               <TrendingUp className="h-5 w-5 text-primary" />
               <h2 className="font-display text-xl font-bold">24-Hour Analytics</h2>
             </div>
-            {!error && liveData && (
+            {!farmError && liveData && (
               <div className="text-xs text-emerald-500 font-medium flex items-center gap-1.5 bg-emerald-500/10 px-2 py-1 rounded-full">
                 <RefreshCcw size={12} className="animate-spin" /> Live
               </div>

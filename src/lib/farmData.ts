@@ -10,9 +10,9 @@
 
 export interface MetricCard {
   label: string;
-  value: number;
+  value: number | React.ReactNode;
   unit: string;
-  status: "good" | "moderate" | "poor";
+  status: "good" | "moderate" | "poor" | "offline";
   statusLabel: string;
   icon: string;
   description: string;
