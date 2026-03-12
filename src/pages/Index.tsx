@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { TrendingUp, WifiOff, RefreshCcw, AlertTriangle } from "lucide-react"; 
+import { Server, TrendingUp, WifiOff, RefreshCcw, AlertTriangle } from "lucide-react"; 
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import HeroSection from "@/components/dashboard/HeroSection";
 import MetricCard from "@/components/dashboard/MetricCard";
@@ -26,13 +26,21 @@ const Index = () => {
     baseData.systemStatus = liveHealth;
 
     // 4. Map Environmental Data from the liveData hook
-    if (liveData) {
+    if (liveData && !healthError) {
       // 1. Map CO2 with Partial Pressure description
       if (liveData.co2) {
         const currentCO2 = Number(liveData.co2 || 0);
         const currentTotPressure = Number(liveData.pressure || 0);
         baseData.co2.value = currentCO2;
         baseData.co2.description = `Crops feel CO2 Partial Pressure of ${WeatherPhysics.getCO2PartialPressure(currentCO2, currentTotPressure).toFixed(1)} hPa`;
+
+	if (currentCO2 >= 400 && currentCO2 <= 800) {
+	  baseData.co2.status = "good";
+	}else if (currentCO2 > 800 && currentCO2 <= 1200) {
+	  baseData.co2.status = "moderate";
+	}else {
+	  baseData.co2.status = "poor";
+	}
       }
 
       // 2. Map Triple AQI Values
@@ -109,24 +117,13 @@ const Index = () => {
     document.documentElement.classList.toggle("dark", isDark);
   }, [isDark]);
 
-  // 3. Reusable Placeholder for the charts
-  const OfflinePlaceholder = ({ title }: { title: string }) => (
-    <div className="flex flex-col items-center justify-center h-[300px] border-2 border-dashed rounded-xl bg-muted/20 p-6 text-center">
-      <WifiOff className="text-destructive/50 mb-3" size={40} />
-      <h4 className="font-bold text-foreground tracking-tight">{title} Unavailable</h4>
-      <p className="text-sm text-muted-foreground max-w-[220px] mt-2">
-        Connect to <span className="font-bold text-primary italic">Lohia_Farm</span> Wi-Fi for live data.
-      </p>
-    </div>
-  );
-
   return (
   <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
     {/* 1. Header stays at the absolute top */}
     <DashboardHeader isDark={isDark} onToggleTheme={() => setIsDark(!isDark)} />
     
     {/* 2. Alert now sits neatly below the header */}
-    {farmError && (
+    {healthError && (
       <div className="bg-destructive text-destructive-foreground py-2 px-4 text-center flex items-center justify-center gap-2 border-b border-white/10 shadow-sm animate-in slide-in-from-top-1">
         <WifiOff size={14} className="opacity-90" />
         <span className="font-bold uppercase tracking-widest text-[10px] md:text-xs">
@@ -150,43 +147,23 @@ const Index = () => {
           <MetricCard data={data.environment.pressure} />
         </div>
 
-        <div className="mt-10">
-          <div className="mb-5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <h2 className="font-display text-xl font-bold">24-Hour Analytics</h2>
+          <div className="glass-card mx-auto w-full max-w-2xl p-4 md:p-6 relative mt-10 rounded-xl overflow-hidden">
+	    <div className="mb-4 flex items-center gap-2">
+              <Server className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-base md:text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                System Status
+              </h3>
             </div>
             {!farmError && liveData && (
-              <div className="text-xs text-emerald-500 font-medium flex items-center gap-1.5 bg-emerald-500/10 px-2 py-1 rounded-full">
-                <RefreshCcw size={12} className="animate-spin" /> Live
+              <div className="absolute top-2 right-2 md:top-4 md:right-4 text-[10px] md:text-xs text-emerald-500 font-medium flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                <RefreshCcw size={15} className="animate-spin" /> Live
               </div>
             )}
+            <div className="space-y-4">
+              <SystemStatus status={data.systemStatus} />
+            </div>
           </div>
 
-          {/* Charts Row */}
-          <div className="grid gap-4 md:grid-cols-2">
-            {liveData?.trends ? (
-              <TrendChart title="Air Quality Index" data={liveData.trends.aqi} color="hsl(var(--chart-1))" unit=" AQI" />
-            ) : (
-              <OfflinePlaceholder title="AQI Trend" />
-            )}
-
-            {liveData?.trends ? (
-              <TrendChart title="Temperature" data={liveData.trends.temperature} color="hsl(var(--chart-2))" unit="°C" />
-            ) : (
-              <OfflinePlaceholder title="Temperature Trend" />
-            )}
-          </div>
-
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            {liveData?.trends ? (
-              <TrendChart title="CO₂ Concentration" data={liveData.trends.co2} color="hsl(var(--chart-3))" unit=" ppm" />
-            ) : (
-              <OfflinePlaceholder title="CO₂ Trend" />
-            )}
-            <SystemStatus status={data.systemStatus} />
-          </div>
-        </div>
       </main>
 
       <DashboardFooter contact={data.contact} />

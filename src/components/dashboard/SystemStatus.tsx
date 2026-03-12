@@ -1,4 +1,4 @@
-import { Activity, Clock, Server, Wifi } from "lucide-react";
+import { Activity, Clock, Wifi } from "lucide-react";
 import type { FarmData } from "@/lib/farmData";
 
 interface SystemStatusProps {
@@ -9,37 +9,43 @@ const SystemStatus = ({ status }: SystemStatusProps) => {
   const allOnline = status.sensorsOnline === status.totalSensors;
 
   return (
-    <div className="glass-card rounded-xl p-5">
-      <div className="mb-4 flex items-center gap-2">
-        <Server className="h-4 w-4 text-muted-foreground" />
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          System Status
-        </h3>
-      </div>
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
+    <div className="w-full">
+      <div className="space-y-4">
+        
+        {/* SENSORS ROW */}
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
             <Wifi className="h-4 w-4" />
-            Sensors
+            <span className="font-medium">Sensors</span>
           </div>
-          <span className={`text-sm font-semibold text-right ${allOnline ? "text-status-good" : "text-status-moderate"}`}>
-            {status.sensorsOnline}/{status.totalSensors} Online
+          <span className={`text-sm font-bold text-right whitespace-nowrap ${allOnline ? "text-emerald-500" : "text-amber-500"}`}>
+            {status.sensorsOnline}/{status.totalSensors} <span className="hidden xs:inline">Online</span>
           </span>
         </div>
-        <div className="flex items-center justify-between">
+
+        {/* LAST UPDATE ROW */}
+        <div className="flex items-center justify-between gap-3 border-t border-white/5 pt-3">
           <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
             <Clock className="h-4 w-4" />
-            Last Update
+            <span className="font-medium">Updated</span>
           </div>
-          <span className="text-sm font-semibold text-right text-foreground">{status.lastUpdate}</span>
+          {/* Logic: No truncate on larger screens (md:max-w-none) */}
+          <span className="text-sm font-semibold text-right text-foreground truncate max-w-[100px] min-[350px]:max-w-none min-[350px]:overflow-visible min-[350px]:whitespace-nowrap">
+            {status.lastUpdate}
+          </span>
         </div>
-        <div className="flex items-center justify-between">
+
+        {/* UPTIME ROW */}
+        <div className="flex items-center justify-between gap-3 border-t border-white/5 pt-3">
           <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
             <Activity className="h-4 w-4" />
-            Uptime
+            <span className="font-medium">Uptime</span>
           </div>
-          <span className="text-sm font-semibold text-right text-status-good">{status.uptime}</span>
+          <span className="text-sm font-semibold text-right text-emerald-500 md:whitespace-nowrap">
+            {status.uptime}
+          </span>
         </div>
+
       </div>
     </div>
   );

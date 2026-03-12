@@ -21,20 +21,42 @@ const point = isDev ? "http://localhost:8080/api/status" : "http://192.168.4.1/a
 
 export const useHealthCheck = () => {
   // 1. Track browser-level online status
+  const [isHardwareNetwork, setIsHardwareNetwork] = useState(false);
   const [isBrowserOnline, setIsBrowserOnline] = useState(navigator.onLine);
 
   useEffect(() => {
-    const handleStatusChange = () => setIsBrowserOnline(navigator.onLine);
-    window.addEventListener('online', handleStatusChange);
-    window.addEventListener('offline', handleStatusChange);
+    const checkNetwork = async () => {
+      try {
+        // Replace this with your ESP32's actual local IP or hostname
+        const response = await fetch(point, { mode: 'no-cors' });
+        setIsHardwareNetwork(true);
+      } catch (err) {
+        setIsHardwareNetwork(false);
+      }
+    };
+
+    // Check on mount and whenever browser status changes
+    checkNetwork();
+
+    const handleStatusChange = () => {
+      setIsBrowserOnline(navigator.onLine);
+      checkNetwork();
+    };
+
+    window.addEventListener("online", handleStatusChange);
+    window.addEventListener("offline", handleStatusChange);
+
     return () => {
-      window.removeEventListener('online', handleStatusChange);
-      window.removeEventListener('offline', handleStatusChange);
+      window.removeEventListener("online", handleStatusChange);
+      window.removeEventListener("offline", handleStatusChange);
     };
   }, []);
 
+  // This is your "Extracted" status
+  const isLohiaFarmOnline = isBrowserOnline && isHardwareNetwork;
+
   const { data, error, isLoading } = useSWR<FarmData["systemStatus"]>(
-    isBrowserOnline ? point : null, // Stop fetching if Wi-Fi is off
+    isLohiaFarmOnline ? point : null, // Stop fetching if Wi-Fi is off
     fetcher,
     { 
       refreshInterval: 3000,
@@ -48,7 +70,7 @@ export const useHealthCheck = () => {
 
   // 2. Determine the "True" status message
   let displayUpdate = "Connecting...";
-  if (!isBrowserOnline) displayUpdate = "No Wi-Fi Connection";
+  if (!isLohiaFarmOnline) displayUpdate = "No Wi-Fi Connection";
   else if (error) displayUpdate = "Hardware Unreachable";
   else if (data) displayUpdate = data.lastUpdate;
 
@@ -59,7 +81,7 @@ export const useHealthCheck = () => {
       lastUpdate: displayUpdate,
       uptime: "---"
     },
-    isOffline: !isBrowserOnline || !!error,
-    isLoading: isLoading && isBrowserOnline
+    isOffline: !isLohiaFarmOnline || !!error,
+    isLoading: isLoading && isLohiaFarmOnline
   };
 };

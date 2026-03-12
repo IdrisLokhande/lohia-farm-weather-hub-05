@@ -15,7 +15,7 @@ const fetcher = async (url: string) => {
 };
 
 const isDev = true;
-const point = isDev ? "http://localhost:8080/api/weather" : "http://192.168.4.1/api/status";
+const point = isDev ? "http://localhost:8080/api/weather" : "http://192.168.4.1/api/weather";
 
 export const useFarmData = () => {
   const { data, error, isLoading } = useSWR(point, fetcher, {

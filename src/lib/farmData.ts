@@ -49,11 +49,6 @@ export interface FarmData {
   };
 }
 
-// TODO: Replace this function with an API call
-// e.g., export async function fetchFarmData(): Promise<FarmData> {
-//   const res = await fetch('https://your-api.com/farm/lohia/data');
-//   return res.json();
-// }
 export function getFarmData(): FarmData {
   return {
     airQuality: {
@@ -106,7 +101,7 @@ export function getFarmData(): FarmData {
     systemStatus: {
       sensorsOnline: 0,
       totalSensors: 3,
-      lastUpdate: "3 seconds ago",
+      lastUpdate: "---",
       uptime: "---",
     },
     contact: {

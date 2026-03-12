@@ -1,5 +1,5 @@
 import React from "react";
-import { Wind, Thermometer, Droplets, Gauge, Cloud } from "lucide-react";
+import { Wind, Thermometer, Droplets, Gauge, Cloud, AlertCircle, HelpCircle, Check } from "lucide-react";
 import type { MetricCard as MetricCardType } from "@/lib/farmData";
 
 const iconMap: Record<string, React.ElementType> = {
@@ -15,13 +15,14 @@ const statusColors: Record<string, string> = {
   good: "bg-status-good text-primary-foreground",
   moderate: "bg-status-moderate text-primary-foreground",
   poor: "bg-status-poor text-primary-foreground",
+  offline: null
 };
 
 // Colors for the icon background (subtle tint)
 const iconBgColors: Record<string, string> = {
   good: "bg-primary/15 text-primary",
   moderate: "bg-status-moderate/15 text-status-moderate",
-  poor: "bg-status-poor/15 text-status-poor",
+  poor: "bg-status-poor/15 text-status-poor"
 };
 
 interface MetricCardProps {
@@ -34,12 +35,14 @@ const MetricCard = ({ data }: MetricCardProps) => {
   // Logic to determine which symbol to show based on the data status
   const getStatusSymbol = (status: string) => {
     switch (status) {
+      case "good":
+	return <Check className="h-3 w-3 stroke-[4]" />;
       case "poor":
-        return "!";
+        return <AlertCircle className="h-3 w-3 stroke-[3]" />;
       case "moderate":
-        return "~";
+        return <span className="text-xs">~</span>;
       default:
-        return null; // Keep 'good' status clean
+        return null; // Keep 'offline' status clean
     }
   };
 
@@ -55,18 +58,23 @@ const MetricCard = ({ data }: MetricCardProps) => {
           </div>
           
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               {data.label}
             </p>
-            <p className="text-[10px] text-muted-foreground/80">Real-time monitoring</p>
+            <p className="text-[12px] text-muted-foreground/80">Real-time monitoring</p>
           </div>
         </div>
 
         {/* The Status Badge with Symbols (! or ~) */}
         <span
-          className={`flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-tight shadow-sm transition-all ${
-            statusColors[data.status]
-          } ${data.status === "poor" ? "animate-pulse ring-2 ring-destructive/20" : ""}`}
+          className={`
+             inline-flex items-center justify-center gap-1.5 
+             rounded-full px-2 py-1 
+             text-[10px] font-black uppercase tracking-wider 
+             shadow-sm transition-all duration-300
+             ${statusColors[data.status]} 
+             ${data.status === "poor" ? "animate-pulse ring-2 ring-destructive/20" : ""}
+          `}
         >
           {symbol && (
             <span className="text-xs font-black brightness-125">
