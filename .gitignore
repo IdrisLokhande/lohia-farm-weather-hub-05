@@ -7,11 +7,6 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +17,33 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# --- Dependencies ---
+node_modules/
+.pnp
+.pnp.js
+
+# --- Testing ---
+coverage/
+
+# --- Production Build ---
+dist/
+dist-ssr/
+*.local
+
+# --- CRITICAL: Environment Variables (Firebase Keys) ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# --- TypeScript / Build Cache ---
+*.tsbuildinfo
+node_modules/.vite
+
+# --- Linux / OS Specific ---
+.DS_Store
+.directory
+.Trash-999/
+thumbs.db

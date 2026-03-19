@@ -35,7 +35,8 @@ const server = http.createServer((req, res) => {
       aqi5_0: Math.floor(Math.random() * 50),          // Random AQI
       aqi10_0: Math.floor(Math.random() * 50),         // Random AQI
       pressure: Math.floor(1000 + Math.random() * 20), // Random hPa
-      co2: Math.floor(350 + Math.random() * 150)       // Random ppm
+      co2: Math.floor(350 + Math.random() * 150),       // Random ppm
+      lintensity: Math.floor(350 + Math.random() * 150)       // Random ppm
     }));
   }
 

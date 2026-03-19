@@ -29,6 +29,7 @@ export interface FarmData {
     temperature: MetricCard;
     humidity: MetricCard;
     pressure: MetricCard;
+    lintensity: MetricCard;
   };
   co2: MetricCard;
   trends: {
@@ -58,7 +59,7 @@ export function getFarmData(): FarmData {
       status: "offline",
       statusLabel: "",
       icon: "wind",
-      description: "Cannot fetch data",
+      description: "---",
     },
     environment: {
       temperature: {
@@ -68,7 +69,7 @@ export function getFarmData(): FarmData {
         status: "offline",
         statusLabel: "",
         icon: "thermometer",
-        description: "Cannot fetch data",
+        description: "---",
       },
       humidity: {
         label: "HUMIDITY",
@@ -77,7 +78,7 @@ export function getFarmData(): FarmData {
         status: "offline",
         statusLabel: "",
         icon: "droplets",
-        description: "Cannot fetch data",
+        description: "---",
       },
       pressure: {
         label: "PRESSURE",
@@ -86,8 +87,18 @@ export function getFarmData(): FarmData {
         status: "offline",
         statusLabel: "",
         icon: "gauge",
-        description: "Cannot fetch data",
+        description: "---",
       },
+      lintensity: {
+        label: "Light Intensity",
+        value: 0.0,
+        unit: "LUX",
+        status: "offline",
+        statusLabel: "",
+        icon: "sun",
+        description: "---",
+      },
+
     },
     co2: {
       label: "CO₂ LEVEL",
@@ -96,18 +107,13 @@ export function getFarmData(): FarmData {
       status: "offline",
       statusLabel: "",
       icon: "cloud",
-      description: "Cannot fetch data",
+      description: "---",
     },
     systemStatus: {
       sensorsOnline: 0,
-      totalSensors: 3,
+      totalSensors: "-",
       lastUpdate: "---",
       uptime: "---",
-    },
-    contact: {
-      phone: "+91 98765 43210",
-      email: "info@lohiafarm.com",
-      address: "Lohia Farm, Rural District, India",
     },
   };
 }
