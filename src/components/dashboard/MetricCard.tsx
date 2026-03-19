@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Wind, Thermometer, Droplets, Gauge, Sun, Cloud, AlertCircle, Check } from "lucide-react";
+import { Wind, Thermometer, Droplets, Gauge, Sun, Cloud, AlertCircle, Check, TrendingUp } from "lucide-react";
 import type { MetricCard as MetricCardType } from "@/lib/farmData";
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -28,9 +28,10 @@ interface MetricCardProps {
   data: MetricCardType;
   enableShadow: boolean;
   t: any;
+  onShowTrend: () => void; // New Prop
 }
 
-const MetricCard = ({ data, enableShadow, t }: MetricCardProps) => {
+const MetricCard = ({ data, enableShadow, t, onShowTrend }: MetricCardProps) => {
   const Icon = ICON_MAP[data.icon] || Wind;
 
   const symbol = useMemo(() => {
@@ -99,7 +100,7 @@ const MetricCard = ({ data, enableShadow, t }: MetricCardProps) => {
         </span>
       </div>
 
-      {/* 3. The Invisible Spacer - Essential for alignment */}
+      {/* 3. The Invisible Spacer */}
       <div className="flex-1" />
 
       {/* 4. Min/Max Row */}
@@ -135,12 +136,30 @@ const MetricCard = ({ data, enableShadow, t }: MetricCardProps) => {
         </div>
       </div>
 
-      {/* 5. Description */}
-      <p className={`mt-4 text-[13px] min-[790px]:text-[16.5px] leading-tight min-[790px]:leading-snug antialiased relative z-20 tracking-normal min-[790px]:tracking-widest ${
-        data.status === 'poor' ? 'text-rose-700 dark:text-rose-400 font-bold' : 'text-emerald-950/80 dark:text-slate-400'
-      }`}>
-        {data.description}
-      </p>
+      {/* 5. Description & Trend Button Container */}
+      <div className="mt-4 relative z-20">
+        <p className={`text-[13px] min-[790px]:text-[16px] pr-14 leading-tight min-[790px]:leading-snug antialiased tracking-normal min-[790px]:tracking-widest ${
+          data.status === 'poor' ? 'text-rose-700 dark:text-rose-400 font-bold' : 'text-emerald-950/80 dark:text-slate-400'
+        }`}>
+          {data.description}
+        </p>
+
+        {/* TREND ACTION BUTTON */}
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            onShowTrend();
+          }}
+          className={`absolute bottom-0 right-0 p-2.5 rounded-xl transition-all duration-300 group
+            ${!enableShadow 
+              ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-white/5" 
+              : "bg-emerald-600/10 text-emerald-700 hover:bg-emerald-600/20 border border-black/5"
+            }`}
+          title="View Trends"
+        >
+          <TrendingUp className="h-4 w-4 min-[790px]:h-5 min-[790px]:w-5 transition-transform group-hover:scale-110 group-hover:-translate-y-0.5" />
+        </button>
+      </div>
 
       {/* Shadow Luster */}
       <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-black/[0.03] rounded-full blur-2xl pointer-events-none z-0 dark:hidden" />

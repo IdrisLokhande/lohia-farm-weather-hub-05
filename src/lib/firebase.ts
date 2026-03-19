@@ -1,6 +1,7 @@
 // src/lib/firebase.ts
 import { initializeApp } from "firebase/app";
-import { getDatabase } from "firebase/database";
+import { getDatabase } from "firebase/database"; // For Live Hub
+import { getFirestore } from "firebase/firestore"; // For Trends/History
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -14,4 +15,6 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = getDatabase(app);
+
+export const rtdb = getDatabase(app);
+export const db = getFirestore(app);

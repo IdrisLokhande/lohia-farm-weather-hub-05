@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ref, onValue, query, limitToLast } from "firebase/database";
-import { db } from "@/lib/firebase"; 
+import { rtdb } from "@/lib/firebase"; 
 import type { FarmData } from "@/lib/farmData";
 
 /**
@@ -30,13 +30,13 @@ export const useFarmHub = (lang: string = 'en') => {
 
   useEffect(() => {
     // 1. Monitor the Socket
-    const connectedRef = ref(db, ".info/connected");
+    const connectedRef = ref(rtdb, ".info/connected");
     const unsubConnect = onValue(connectedRef, (snap) => {
       setIsFirebaseConnected(snap.val() === true);
     });
 
     // 2. Subscribe to your data node
-    const weatherRef = query(ref(db, 'weather'), limitToLast(1));
+    const weatherRef = query(ref(rtdb, 'weather'), limitToLast(1));
 
     const unsubData = onValue(weatherRef, (snapshot) => {
       if (snapshot.exists()) {
@@ -54,7 +54,7 @@ export const useFarmHub = (lang: string = 'en') => {
             lastUpdate: clockTime, 
             uptime: values.uptime || "---",
             sensorsOnline: values.sensorsOnline || 0,
-            totalSensors: values.totalSensors || 3
+            totalSensors: values.totalSensors || "-"
           }
         });
       }

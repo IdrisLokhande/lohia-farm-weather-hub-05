@@ -4,9 +4,11 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import HeroSection from "@/components/dashboard/HeroSection";
 import MetricCard from "@/components/dashboard/MetricCard";
 import TrendChart from "@/components/dashboard/TrendChart";
+import TrendPopup from "@/components/dashboard/TrendPopup";
 import SystemStatus from "@/components/dashboard/SystemStatus";
 import DashboardFooter from "@/components/dashboard/DashboardFooter";
 import { getFarmData } from "@/lib/farmData";
+import { useHistoricalData } from "@/hooks/use-historical-data";
 import { useFarmHub } from "@/hooks/use-farm-data"; 
 import { WeatherPhysics } from "@/lib/weather-physics";
 
@@ -115,7 +117,15 @@ const translations = {
 const Index = () => {
   const [isDark, setIsDark] = useState(true);
   const [lang, setLang] = useState('en'); // 'en', 'hi', or 'mr'
+  const [activeTrend, setActiveTrend] = useState<string | null>(null); // State for Pop-up View
+  
   const t = translations[lang];  
+
+  // 1. Data Hooks
+  // Live feed for cards
+  const { liveData, systemStatus, isOffline, loading: liveLoading } = useFarmHub();
+  // Historical feed for charts
+  const { history, loading: historyLoading } = useHistoricalData();
 
   const formatValue = (val) => {
     return new Intl.NumberFormat(lang === 'en' ? 'en-US' : (lang === 'hi' ? 'hi-IN' : 'mr-IN'), {
@@ -124,9 +134,6 @@ const Index = () => {
       numberingSystem: lang === 'en' ? 'latn' : 'deva',
     }).format(val);
   };
-
-  // 1. Call the unified hook (Replacing useFarmData and useHealthCheck)
-  const { liveData, systemStatus, isOffline, loading } = useFarmHub();
 
   // 2. Memoize the combined data object
   const data = useMemo(() => {
@@ -164,38 +171,24 @@ const Index = () => {
       let major = maxVal === a1 ? t.pm1 : (maxVal === a25 ? t.pm25 : t.pm10);
 
       baseData.airQuality.value = (
-        /* We use inline-flex here so the block only takes as much space as needed.
-           This allows the MetricCard's internal unit <span> to sit right next to it.
-        */
         <div className="inline-flex items-baseline gap-3 xs:gap-4 lg:gap-6">
-          {/* PM 1.0 */}
           <div className="flex flex-col">
-            <span className="text-lg xs:text-xl sm:text-2xl min-[790px]:text-3xl xl:text-4xl font-black leading-none whitespace-nowrap">
+            <span className="text-2xl min-[790px]:text-3xl font-black leading-none whitespace-nowrap">
               {formatValue(a1)}
             </span>
-            <span className="mt-1 text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-900/50 dark:text-slate-500">
-              PM1.0
-            </span>
+            <span className="mt-1 text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-900/50 dark:text-slate-500">PM1.0</span>
           </div>
-
-          {/* PM 2.5 */}
           <div className="flex flex-col">
-            <span className="text-lg xs:text-xl sm:text-2xl min-[790px]:text-3xl xl:text-4xl font-black leading-none whitespace-nowrap">
+            <span className="text-2xl min-[790px]:text-3xl font-black leading-none whitespace-nowrap">
               {formatValue(a25)}
             </span>
-            <span className="mt-1 text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-900/50 dark:text-slate-500">
-              PM2.5
-            </span>
+            <span className="mt-1 text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-900/50 dark:text-slate-500">PM2.5</span>
           </div>
-
-          {/* PM 10.0 */}
           <div className="flex flex-col">
-            <span className="text-lg xs:text-xl sm:text-2xl min-[790px]:text-3xl xl:text-4xl font-black leading-none whitespace-nowrap">
+            <span className="text-2xl min-[790px]:text-3xl font-black leading-none whitespace-nowrap">
               {formatValue(a10)}
             </span>
-            <span className="mt-1 text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-900/50 dark:text-slate-500">
-              PM10.0
-            </span>
+            <span className="mt-1 text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-900/50 dark:text-slate-500">PM10.0</span>
           </div>
         </div>
       );
@@ -224,12 +217,9 @@ const Index = () => {
 
     } else {
       const sensors = [
-        baseData.environment.temperature,
-        baseData.environment.humidity,
-        baseData.environment.pressure,
-        baseData.environment.lintensity,
-        baseData.co2,
-        baseData.airQuality
+        baseData.environment.temperature, baseData.environment.humidity,
+        baseData.environment.pressure, baseData.environment.lintensity,
+        baseData.co2, baseData.airQuality
       ];
       sensors.forEach(s => s.status = "offline");
     }
@@ -256,7 +246,6 @@ const Index = () => {
         t={t} 
       />
 
-      {/* Connection Alert triggered by the unified isOffline state */}
       {isOffline && (
         <div className="bg-destructive/90 backdrop-blur-md text-white py-2 px-4 text-center flex items-center justify-center gap-2 border-b border-white/10 sticky top-0 z-50 transition-all">
           <WifiOff size={16} className="animate-pulse" />
@@ -269,57 +258,94 @@ const Index = () => {
       <HeroSection lang={lang} t={t} />
 
       <main className="container mx-auto px-4 py-6 md:px-6 relative z-10">
-        <div className="grid gap-4 sm:grid-cols-2 min-[1220px]:grid-cols-3 grid-auto-rows-fr">
-          <MetricCard data={data.environment.humidity} enableShadow={!isDark} t={t}/>
-          <MetricCard data={data.environment.pressure} enableShadow={!isDark} t={t}/>
-          <MetricCard data={data.environment.temperature} enableShadow={!isDark} t={t}/>
-          <MetricCard data={data.environment.lintensity} enableShadow={!isDark} t={t}/>
-          <MetricCard data={data.airQuality} enableShadow={!isDark} t={t}/>
-          <MetricCard data={data.co2} enableShadow={!isDark} t={t}/>
+        <div className="grid gap-4 min-[850px]:grid-cols-2 min-[1300px]:grid-cols-3 grid-auto-rows-fr">
+          <MetricCard 
+            data={data.environment.humidity} 
+            enableShadow={!isDark} 
+            t={t} 
+            onShowTrend={() => setActiveTrend('humidity')} 
+          />
+          <MetricCard 
+            data={data.environment.pressure} 
+            enableShadow={!isDark} 
+            t={t} 
+            onShowTrend={() => setActiveTrend('pressure')} 
+          />
+          <MetricCard 
+            data={data.environment.temperature} 
+            enableShadow={!isDark} 
+            t={t} 
+            onShowTrend={() => setActiveTrend('temperature')} 
+          />
+          <MetricCard 
+            data={data.environment.lintensity} 
+            enableShadow={!isDark} 
+            t={t} 
+            onShowTrend={() => setActiveTrend('lintensity')} 
+          />
+          <MetricCard 
+            data={data.airQuality} 
+            enableShadow={!isDark} 
+            t={t} 
+            onShowTrend={() => setActiveTrend('airQuality')} 
+          />
+          <MetricCard 
+            data={data.co2} 
+            enableShadow={!isDark} 
+            t={t} 
+            onShowTrend={() => setActiveTrend('co2')} 
+          />
         </div>
-      <section className="mt-12 mx-auto w-full max-w-2xl">
-  <div className={`glass-card p-5 xs:p-6 md:p-10 rounded-[2rem] border relative overflow-hidden backdrop-blur-xl shadow-lg transition-all duration-700
-    ${isDark 
-      ? 'bg-white/5 border-white/10' 
-      : 'bg-white/85 border-black/10'}`}
-  >
-    <div className={`absolute -top-24 -left-24 w-48 h-48 blur-[80px] rounded-full pointer-events-none transition-colors duration-700
-      ${isDark ? 'bg-emerald-500/10' : 'bg-blue-500/30'}`} 
-    />
-    
-    {/* Header: Added flex-wrap and items-start to handle the height increase from the wrapped text */}
-    <div className="mb-6 xs:mb-8 flex flex-wrap items-start justify-between gap-4 relative z-10">
-      <div className="flex items-center gap-3 opacity-95">
-        <Server className={`h-5 w-5 shrink-0 ${isDark ? 'text-emerald-500' : 'text-blue-700'}`} />
-        <h3 className={`text-[13px] font-black uppercase tracking-[0.3em] leading-[1.4] -mr-[0.3em]
-          /* Wrap trigger for 360px */
-          max-[360px]:max-w-[min-content] max-[360px]:leading-[1.2]
-          ${isDark ? 'text-muted-foreground' : 'text-blue-950'}`}>
-          {t.systemStatus}
-        </h3>
-      </div>
 
-      {!isOffline && liveData && (
-        <div className={`text-[10px] font-bold flex items-center gap-2 px-3 xs:px-4 py-1.5 rounded-full border backdrop-blur-sm transition-all shrink-0
-          ${isDark 
-            ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' 
-            : 'text-blue-800 bg-blue-100/60 border-blue-400/30'}`}
-        >
-          <span className="relative flex h-2 w-2">
-            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isDark ? 'bg-emerald-400' : 'bg-blue-400'}`}></span>
-            <span className={`relative inline-flex rounded-full h-2 w-2 ${isDark ? 'bg-emerald-500' : 'bg-blue-700'}`}></span>
-          </span>
-          <span className="tracking-widest uppercase">{t.live}</span>
-        </div>
-      )}
-    </div>
+        <section className="mt-12 mx-auto w-full max-w-2xl">
+          <div className={`glass-card p-5 xs:p-6 md:p-10 rounded-[2rem] border relative overflow-hidden backdrop-blur-xl shadow-lg transition-all duration-700
+            ${isDark ? 'bg-white/5 border-white/10' : 'bg-white/85 border-black/10'}`}
+          >
+            <div className={`absolute -top-24 -left-24 w-48 h-48 blur-[80px] rounded-full pointer-events-none transition-colors duration-700
+              ${isDark ? 'bg-emerald-500/10' : 'bg-blue-500/30'}`} 
+            />
+            
+            <div className="mb-6 xs:mb-8 flex flex-wrap items-start justify-between gap-4 relative z-10">
+              <div className="flex items-center gap-3 opacity-95">
+                <Server className={`h-5 w-5 shrink-0 ${isDark ? 'text-emerald-500' : 'text-blue-700'}`} />
+                <h3 className={`text-[13px] font-black uppercase tracking-[0.3em] leading-[1.4] -mr-[0.3em]
+                  max-[360px]:max-w-[min-content] max-[360px]:leading-[1.2]
+                  ${isDark ? 'text-muted-foreground' : 'text-blue-950'}`}>
+                  {t.systemStatus}
+                </h3>
+              </div>
 
-    <div className={`space-y-2 relative z-10 ${!isDark ? 'text-blue-950 font-bold' : ''}`}>
-      <SystemStatus status={data.systemStatus} isLight={!isDark} t={t} />
-    </div>
-  </div>
-</section>
+              {!isOffline && liveData && (
+                <div className={`text-[10px] font-bold flex items-center gap-2 px-3 xs:px-4 py-1.5 rounded-full border backdrop-blur-sm transition-all shrink-0
+                  ${isDark 
+                    ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' 
+                    : 'text-blue-800 bg-blue-100/60 border-blue-400/30'}`}
+                >
+                  <span className="relative flex h-2 w-2">
+                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isDark ? 'bg-emerald-400' : 'bg-blue-400'}`}></span>
+                    <span className={`relative inline-flex rounded-full h-2 w-2 ${isDark ? 'bg-emerald-500' : 'bg-blue-700'}`}></span>
+                  </span>
+                  <span className="tracking-widest uppercase">{t.live}</span>
+                </div>
+              )}
+            </div>
+
+            <div className={`space-y-2 relative z-10 ${!isDark ? 'text-blue-950 font-bold' : ''}`}>
+              <SystemStatus status={data.systemStatus} isLight={!isDark} t={t} />
+            </div>
+          </div>
+        </section>
       </main>
+
+      {/* Detail View Layer */}
+      <TrendPopup 
+        activeMetric={activeTrend} 
+        onClose={() => setActiveTrend(null)} 
+        history={history} 
+        isDark={isDark} 
+        t={t}
+        loading={historyLoading}
+      />
 
       <DashboardFooter />
     </div>
