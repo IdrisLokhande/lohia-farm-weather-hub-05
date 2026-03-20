@@ -50,6 +50,10 @@ const translations = {
     connecting: "Connecting...",
     noWiFiConnection: "No Wi-Fi Connection",
     hardwareUnreachable: "Hardware Unreachable",
+    "1h": "1 Hour",
+    "24h": "24 Hours",
+    "7d": "7 Days",
+    "30d": "1 Month",
   },
   hi: {
     dashBoardTitle: "जियोसेंस",
@@ -87,6 +91,10 @@ const translations = {
     connecting: "कनेक्ट हो रहा है...",
     noWiFiConnection: "कोई वाई-फ़ाई कनेक्शन नहीं",
     hardwareUnreachable: "हार्डवेयर पहुंच योग्य नहीं",
+    "1h": "१ घंटा",
+    "24h": "२४ घंटे",
+    "7d": "७ दिन",
+    "30d": "१ महीना",
   },
   mr: {
     dashBoardTitle: "जिओसेन्स",
@@ -124,6 +132,10 @@ const translations = {
     connecting: "कनेक्ट करत आहे...",
     noWiFiConnection: "कोणतेही वाय-फाय कनेक्शन नाही",
     hardwareUnreachable: "हार्डवेअर अगम्य",
+    "1h": "१ तास",
+    "24h": "२४ तास",
+    "7d": "१ आठवडा",
+    "30d": "१ महिना",
   },
 };
 
