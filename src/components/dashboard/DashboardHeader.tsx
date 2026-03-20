@@ -31,7 +31,7 @@ const DashboardHeader = ({ isDark, lang, onToggleTheme, onLanguageChange, t }: D
           */}
           <span className="font-sans text-lg min-[530px]:text-xl font-bold text-foreground 
             [font-family:'Noto_Sans_Devanagari',sans-serif] [font-variant-ligatures:common-ligatures] 
-            [text-rendering:optimizeLegibility] truncate max-w-[80px] xxs:max-w-none pl-1 md:pl-2 transition-all">
+            [text-rendering:optimizeLegibility] truncate max-w-[65px] min-[335px]:max-w-none pl-1 md:pl-2 transition-all">
             {t.dashBoardTitle}
           </span>
         </div>

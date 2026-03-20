@@ -1,6 +1,7 @@
 import React from "react";
 import { X, TrendingUp, Clock } from "lucide-react";
 import TrendChart from "./TrendChart";
+import { WeatherPhysics } from "@/lib/weather-physics";
 
 interface TrendPopupProps {
   activeMetric: string | null;
@@ -16,20 +17,28 @@ const TrendPopup = ({ activeMetric, onClose, history, isDark, t, loading }: Tren
 
   // 1. Define the Title variable first
   // This handles the "temperature" vs "temp" mismatch in your translations
-  const displayTitle = t[activeMetric] || t['temp'];
+  let displayTitle = t[activeMetric] || t['temp'];
 
   // 2. Map the data for the chart
   const chartData = history.map(point => {
+  let val = 0;
+
+  if (activeMetric === 'airQuality') {
+    // Calculate AQI for this specific point in history
+    displayTitle = t['aqi'];
+    val = WeatherPhysics.calculateIndiaAQI(Number(point.pm25 || 0), Number(point.pm10 || 0));
+  } else {
+    // Standard logic for temp, humidity, lux, etc.
     let firebaseKey = activeMetric;
-    
-    // If UI sends 'lintensity', fetch 'lux' from Firebase
     if (activeMetric === 'lintensity') firebaseKey = 'lux';
-    
-    return {
-      displayTime: point.displayTime, // Matches X-Axis labels
-      fullTime: point.fullTime,       // Matches Tooltip precision
-      value: Number(point[firebaseKey] || 0)
-    };
+    val = Number(point[firebaseKey] || 0);
+  }
+
+  return {
+    displayTime: point.displayTime,
+    fullTime: point.fullTime,
+    value: val
+  };
   });
 
   return (
