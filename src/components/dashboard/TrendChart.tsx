@@ -80,8 +80,17 @@ const TrendChart = ({ title, data, color, unit }: TrendChartProps) => {
     <div className="glass-card rounded-xl p-2 md:p-5 relative overflow-hidden border border-white/5 bg-slate-950/40 backdrop-blur-md">
       {/* Style for the animated dots */}
       <style>{`
-        @keyframes inplace-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-        .blinking-dot > circle { animation: inplace-blink 1.5s ease-in-out infinite; }
+        @keyframes ping-ripple {
+          75%, 100% {
+            transform: scale(2);
+            opacity: 0;
+          }
+        }
+        .ping-dot > circle {
+          transform-origin: center;
+          transform-box: fill-box;
+          animation: ping-ripple 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
       `}</style>
       {/* Header Section */}
       <div className="flex justify-between items-center mb-6 px-2">
@@ -227,27 +236,29 @@ const TrendChart = ({ title, data, color, unit }: TrendChartProps) => {
                 return null;
               }
               return (
-                <ReferenceDot
-                  {...props}
-                  className="blinking-dot"
-                  r={6}
-                  fill="#4ade80"
-                  stroke="#020617"
-                  strokeWidth={2}
-                  isFront={true}
-                >
-                  <Label
-                    value={`Max: ${Number(maxPoint.value).toFixed(1)}${unit} (${
-                      maxPoint.displayTime
-                    })`}
-                    position="top"
-                    offset={12}
-                    fill="hsl(var(--muted-foreground))"
-                    fontSize={10}
-                    fontWeight="bold"
-                    style={{ opacity: 0.9 }}
-                  />
-                </ReferenceDot>
+                <>
+                  {/* Ping layer */}
+                  <ReferenceDot {...props} r={6} fill="#4ade80" className="ping-dot" />
+                  {/* Solid dot with label */}
+                  <ReferenceDot
+                    {...props}
+                    r={6}
+                    fill="#4ade80"
+                    stroke="#020617"
+                    strokeWidth={2}
+                    isFront={true}
+                  >
+                    <Label
+                      value={`Max: ${Number(maxPoint.value).toFixed(1)}${unit} (${maxPoint.displayTime})`}
+                      position="top"
+                      offset={12}
+                      fill="hsl(var(--muted-foreground))"
+                      fontSize={10}
+                      fontWeight="bold"
+                      style={{ opacity: 0.9 }}
+                    />
+                  </ReferenceDot>
+                </>
               );
             }
             return null;
@@ -269,31 +280,38 @@ const TrendChart = ({ title, data, color, unit }: TrendChartProps) => {
                 return null;
               }
               return (
-                <ReferenceDot
-                  {...props}
-                  className="blinking-dot"
-                  r={6}
-                  fill={areMinMaxSame ? "#a3a3a3" : "#f87171"}
-                  stroke="#020617"
-                  strokeWidth={2}
-                  isFront={true}
-                >
-                  <Label
-                    value={
-                      areMinMaxSame
-                        ? `${Number(minPoint.value).toFixed(1)}${unit} (${minPoint.displayTime})`
-                        : `Min: ${Number(minPoint.value).toFixed(1)}${unit} (${
-                            minPoint.displayTime
-                          })`
-                    }
-                    position={areMinMaxSame ? "top" : "bottom"}
-                    offset={12}
-                    fill="hsl(var(--muted-foreground))"
-                    fontSize={10}
-                    fontWeight="bold"
-                    style={{ opacity: 0.9 }}
+                <>
+                  {/* Ping layer */}
+                  <ReferenceDot
+                    {...props}
+                    r={6}
+                    fill={areMinMaxSame ? "#a3a3a3" : "#f87171"}
+                    className="ping-dot"
                   />
-                </ReferenceDot>
+                  {/* Solid dot with label */}
+                  <ReferenceDot
+                    {...props}
+                    r={6}
+                    fill={areMinMaxSame ? "#a3a3a3" : "#f87171"}
+                    stroke="#020617"
+                    strokeWidth={2}
+                    isFront={true}
+                  >
+                    <Label
+                      value={
+                        areMinMaxSame
+                          ? `${Number(minPoint.value).toFixed(1)}${unit} (${minPoint.displayTime})`
+                          : `Min: ${Number(minPoint.value).toFixed(1)}${unit} (${minPoint.displayTime})`
+                      }
+                      position={areMinMaxSame ? "top" : "bottom"}
+                      offset={12}
+                      fill="hsl(var(--muted-foreground))"
+                      fontSize={10}
+                      fontWeight="bold"
+                      style={{ opacity: 0.9 }}
+                    />
+                  </ReferenceDot>
+                </>
               );
             }
             return null;

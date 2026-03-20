@@ -6,9 +6,10 @@ import { ref, get, query, orderByChild, startAt, endAt } from "firebase/database
 
 interface DataDownloaderProps {
   isDark?: boolean;
+  t: any;
 }
 
-const DataDownloader = ({ isDark = true }: DataDownloaderProps) => {
+const DataDownloader = ({ isDark = true, t }: DataDownloaderProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -89,7 +90,7 @@ const DataDownloader = ({ isDark = true }: DataDownloaderProps) => {
         dbQuery = query(weatherRef, orderByChild("timestamp"), startAt(startOfToday.getTime()));
       } else if (mode === "custom") {
         if (!startDate || !endDate) {
-          alert("Please select both start and end dates.");
+          alert(t.selectDates);
           setLoading(false);
           return;
         }
@@ -109,7 +110,7 @@ const DataDownloader = ({ isDark = true }: DataDownloaderProps) => {
       const snapshot = await get(dbQuery!);
 
       if (!snapshot.exists()) {
-        alert("No data found for the selected range.");
+        alert(t.noData);
         setLoading(false);
         return;
       }
@@ -122,7 +123,7 @@ const DataDownloader = ({ isDark = true }: DataDownloaderProps) => {
       generateCSV(dataEntries, `lohia_farm_data_${mode}_${new Date().getTime()}`);
     } catch (error) {
       console.error("Data export error:", error);
-      alert("An error occurred while fetching the data.");
+      alert(t.errorFetching);
     }
 
     setLoading(false);
@@ -140,7 +141,7 @@ const DataDownloader = ({ isDark = true }: DataDownloaderProps) => {
         }`}
       >
         {loading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-        <span className="hidden sm:inline">{loading ? "Exporting..." : "Export"}</span>
+        <span className="hidden sm:inline">{loading ? t.exporting : t.export}</span>
         <ChevronDown size={14} className={`transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
@@ -157,13 +158,13 @@ const DataDownloader = ({ isDark = true }: DataDownloaderProps) => {
               onClick={() => fetchAndDownload("today")}
               className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${isDark ? "hover:bg-white/10" : "hover:bg-black/5"}`}
             >
-              <Clock size={14} className="opacity-70" /> Today's Data
+              <Clock size={14} className="opacity-70" /> {t.todayData}
             </button>
             <button
               onClick={() => fetchAndDownload("all")}
               className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${isDark ? "hover:bg-white/10" : "hover:bg-black/5"}`}
             >
-              <Database size={14} className="opacity-70" /> All Data
+              <Database size={14} className="opacity-70" /> {t.allData}
             </button>
             <button
               onClick={() => {
@@ -172,7 +173,7 @@ const DataDownloader = ({ isDark = true }: DataDownloaderProps) => {
               }}
               className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${isDark ? "hover:bg-white/10" : "hover:bg-black/5"}`}
             >
-              <Calendar size={14} className="opacity-70" /> Custom Range
+              <Calendar size={14} className="opacity-70" /> {t.customRange}
             </button>
           </div>
         </div>
@@ -187,7 +188,7 @@ const DataDownloader = ({ isDark = true }: DataDownloaderProps) => {
             >
               <div className="flex justify-between items-center mb-6 sm:mb-8">
                 <h3 className="font-black uppercase tracking-widest text-xs sm:text-sm">
-                  Select Date Range
+                  {t.selectDateRange}
                 </h3>
                 <button
                   onClick={() => setShowModal(false)}
@@ -205,7 +206,7 @@ const DataDownloader = ({ isDark = true }: DataDownloaderProps) => {
                     htmlFor="start-date"
                     className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1 sm:mb-1.5"
                   >
-                    Start Date
+                    {t.startDate}
                   </label>
                   <input
                     type="date"
@@ -221,7 +222,7 @@ const DataDownloader = ({ isDark = true }: DataDownloaderProps) => {
                     htmlFor="end-date"
                     className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1 sm:mb-1.5"
                   >
-                    End Date
+                    {t.endDate}
                   </label>
                   <input
                     type="date"
@@ -240,7 +241,7 @@ const DataDownloader = ({ isDark = true }: DataDownloaderProps) => {
                 className={`w-full mt-6 sm:mt-8 py-3 rounded-lg text-sm font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2 ${isDark ? "bg-emerald-500 text-slate-950 hover:bg-emerald-400" : "bg-emerald-600 text-white hover:bg-emerald-700"}`}
               >
                 {loading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-                Download CSV
+                {t.downloadCsv}
               </button>
             </div>
           </div>,

@@ -47,7 +47,7 @@ const DashboardHeader = ({
         {/* Right Side: Responsive Stack */}
         <div className="flex flex-col items-end gap-2 xs:flex-row xs:items-center xs:gap-4">
           {/* Download Data Button */}
-          <DataDownloader isDark={isDark} />
+          <DataDownloader isDark={isDark} t={t} />
 
           {/* Language Toggle Container */}
           <div className="flex bg-muted rounded-md p-1 gap-1">
