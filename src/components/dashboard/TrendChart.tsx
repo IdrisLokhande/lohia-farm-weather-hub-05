@@ -73,11 +73,8 @@ const TrendChart = ({ title, data, color, unit }: TrendChartProps) => {
 
   const areMinMaxSame = minPoint && maxPoint && minPoint.id === maxPoint.id;
 
-  // Combine all desired ticks and remove duplicates
-  const tickValues = [startTimestamp, endTimestamp];
-  if (minPoint) tickValues.push(minPoint.timestamp);
-  if (maxPoint && !areMinMaxSame) tickValues.push(maxPoint.timestamp);
-  const uniqueTicks = [...new Set(tickValues.filter(t => t > 0))].sort((a, b) => a - b);
+  // We now only show start and end ticks on the axis. Min/Max times are in the labels.
+  const uniqueTicks = [startTimestamp, endTimestamp].filter(t => t > 0);
 
   return (
     <div className="glass-card rounded-xl p-2 md:p-5 relative overflow-hidden border border-white/5 bg-slate-950/40 backdrop-blur-md">
@@ -126,14 +123,7 @@ const TrendChart = ({ title, data, color, unit }: TrendChartProps) => {
             axisLine={false}
             tick={props => {
               const { x, y, payload } = props;
-              const isStartOrEnd =
-                payload.value === startTimestamp || payload.value === endTimestamp;
-              const textAnchor =
-                payload.value === startTimestamp
-                  ? "start"
-                  : payload.value === endTimestamp
-                    ? "end"
-                    : "middle";
+              const isLast = payload.value === endTimestamp;
               const formattedTime = new Date(payload.value).toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
@@ -144,9 +134,9 @@ const TrendChart = ({ title, data, color, unit }: TrendChartProps) => {
                   y={y + 15}
                   fill="hsl(var(--muted-foreground))"
                   fontSize={10}
-                  fontWeight={isStartOrEnd ? "700" : "900"}
-                  textAnchor={textAnchor}
-                  className={isStartOrEnd ? "opacity-50" : "opacity-80"}
+                  fontWeight="700"
+                  textAnchor={isLast ? "end" : "start"}
+                  className="opacity-50"
                 >
                   {formattedTime}
                 </text>
@@ -247,7 +237,9 @@ const TrendChart = ({ title, data, color, unit }: TrendChartProps) => {
                   isFront={true}
                 >
                   <Label
-                    value={`Max: ${Number(maxPoint.value).toFixed(1)}${unit}`}
+                    value={`Max: ${Number(maxPoint.value).toFixed(1)}${unit} (${
+                      maxPoint.displayTime
+                    })`}
                     position="top"
                     offset={12}
                     fill="hsl(var(--muted-foreground))"
@@ -289,8 +281,10 @@ const TrendChart = ({ title, data, color, unit }: TrendChartProps) => {
                   <Label
                     value={
                       areMinMaxSame
-                        ? `${Number(minPoint.value).toFixed(1)}${unit}`
-                        : `Min: ${Number(minPoint.value).toFixed(1)}${unit}`
+                        ? `${Number(minPoint.value).toFixed(1)}${unit} (${minPoint.displayTime})`
+                        : `Min: ${Number(minPoint.value).toFixed(1)}${unit} (${
+                            minPoint.displayTime
+                          })`
                     }
                     position={areMinMaxSame ? "top" : "bottom"}
                     offset={12}

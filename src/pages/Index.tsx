@@ -71,7 +71,7 @@ const translations = {
     majorPollutant: "मुख्य प्रदूषक है",
     min: "न्यूनतम",
     max: "अधिकतम",
-    aqi: "AQI",
+    aqi: "एक्यूआई",
     temp: "तापमान",
     humidity: "आर्द्रता",
     lintensity: "प्रकाश की तीव्रता",
@@ -105,14 +105,14 @@ const translations = {
     notConnected: "लोहिया फार्म वाय-फायशी कनेक्ट केलेले नाही",
     systemStatus: "सिस्टमची स्थिती",
     sensors: "सेन्सर्स",
-    lupdate: "अंतिम अद्यतन",
+    lupdate: "शेवटचे अद्यतन",
     uptime: "अपटाइम",
     live: "लाइव्ह",
     online: "ऑनलाइन",
     majorPollutant: "मुख्य प्रदूषक आहे",
     min: "किमान",
     max: "कमाल",
-    aqi: "AQI",
+    aqi: "एक्यूआय",
     temp: "तापमान",
     humidity: "आर्द्रता",
     lintensity: "प्रकाश तीव्रता",
@@ -148,7 +148,7 @@ const Index = () => {
   const t = translations[lang];
 
   // 1. Data Hooks (SWR handles the 'stale' data persistence here)
-  const { liveData, systemStatus, isOffline, loading: liveLoading } = useFarmHub();
+  const { liveData, systemStatus, isOffline, loading: liveLoading } = useFarmHub(lang);
   const { history, loading: historyLoading } = useHistoricalData();
 
   const isInitialSync = (liveLoading || historyLoading) && !liveData && history.length === 0;
@@ -170,10 +170,10 @@ const Index = () => {
   // UI state: True if browser is offline OR data is older than 2.5 mins
   const isVisualOffline = isOffline || heartbeatOffline;
 
-  const formatValue = val => {
+  const formatValue = (val, isInt = false) => {
     return new Intl.NumberFormat(lang === "en" ? "en-US" : lang === "hi" ? "hi-IN" : "mr-IN", {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
+      minimumFractionDigits: isInt ? 0 : 1,
+      maximumFractionDigits: isInt ? 0 : 1,
       numberingSystem: lang === "en" ? "latn" : "deva",
     }).format(val);
   };
@@ -225,8 +225,11 @@ const Index = () => {
       // Recalculate Physics (stale data still allows feels-like calc)
       const curTemp = Number(liveData.temperature || 0);
       const curHum = Number(liveData.humidity || 0);
-      baseData.environment.temperature.description = `${t.feelsLike} ${WeatherPhysics.getFeelsLike(curTemp, curHum).toFixed(1)} °C`;
-      // ... same for humidity/pressure descriptions ...
+      const feelsLikeTemp = WeatherPhysics.getFeelsLike(curTemp, curHum);
+      if (!isNaN(feelsLikeTemp)) {
+        baseData.environment.temperature.description = `${t.feelsLike} ${feelsLikeTemp.toFixed(1)} °C`;
+      }
+      // ... same for humidity/pressure descriptions ... (This logic is now safer)
 
       // AQI
       const a1 = Number(liveData.pm1 || 0),
@@ -257,22 +260,25 @@ const Index = () => {
 
       baseData.airQuality = {
         ...baseData.airQuality,
-        value: finalAQI, // Plain number, not a <div>
-        unit: "AQI",
-        min: minAQI,
-        max: maxAQI,
+        value: formatValue(finalAQI, true),
+        unit: t.aqi,
+        min: formatValue(minAQI, true),
+        max: formatValue(maxAQI, true),
         // 2. THIS IS THE KEY: The component looks for this specific property
         pmBreakdown: [
-          { l: "PM1.0", v: a1 },
-          { l: "PM2.5", v: a25 },
-          { l: "PM10.0", v: a10 },
+          { l: "PM1.0", v: formatValue(a1) },
+          { l: "PM2.5", v: formatValue(a25) },
+          { l: "PM10.0", v: formatValue(a10) },
         ],
       };
     }
 
     if (systemStatus) {
+      // Explicitly assigning properties for robustness instead of spreading.
       baseData.systemStatus = {
-        ...systemStatus,
+        uptime: systemStatus.uptime,
+        sensorsOnline: systemStatus.sensorsOnline,
+        totalSensors: systemStatus.totalSensors,
         lastUpdate: isVisualOffline
           ? t.notConnected
           : t[systemStatus.lastUpdate] || systemStatus.lastUpdate,

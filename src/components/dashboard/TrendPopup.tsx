@@ -156,8 +156,14 @@ const TrendPopup = ({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6">
       <div
+        role="button"
+        tabIndex={0}
         className="absolute inset-0 bg-slate-950/40 backdrop-blur-md animate-in fade-in duration-500"
         onClick={onClose}
+        onKeyDown={e => {
+          if (e.key === "Enter" || e.key === " ") onClose();
+        }}
+        aria-label="Close popup"
       />
 
       <div
@@ -167,8 +173,8 @@ const TrendPopup = ({
             : "bg-white/85 border-black/10 ring-1 ring-inset ring-black/5"
         }`}
       >
-        <div className="flex items-center justify-between p-6 md:p-10 pb-0">
-          <div className="flex items-center gap-4">
+        <div className="relative flex flex-col md:flex-row md:items-center md:justify-between p-6 md:p-10 pb-0">
+          <div className="flex flex-col md:flex-row items-center gap-4 text-center md:text-left">
             <div
               className={`p-3 rounded-2xl ${isDark ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-600/10 text-emerald-700"}`}
             >
@@ -176,7 +182,7 @@ const TrendPopup = ({
             </div>
             <div>
               <h2
-                className={`text-2xl md:text-3xl font-black uppercase tracking-[0.2em] ${isDark ? "text-white" : "text-emerald-950"}`}
+                className={`text-xl md:text-3xl font-black uppercase tracking-[0.2em] ${isDark ? "text-white" : "text-emerald-950"}`}
               >
                 {displayTitle}
               </h2>
@@ -192,34 +198,35 @@ const TrendPopup = ({
           </div>
 
           <div className="flex items-center gap-4 md:gap-6">
-            {/* Time Range Selector */}
-            <div
-              className={`flex rounded-full p-1 transition-all ${isDark ? "bg-slate-800/70" : "bg-emerald-100/70"}`}
-            >
-              {["1h", "24h", "7d", "30d"].map(range => (
-                <button
-                  key={range}
-                  onClick={() => handleTimeRangeChange(range)}
-                  className={`px-3 py-1.5 text-[11px] md:text-xs rounded-full transition-all font-black uppercase tracking-widest ${
-                    timeRange === range
-                      ? `shadow-md ${isDark ? "bg-slate-600 text-white" : "bg-white text-emerald-800"}`
-                      : `opacity-60 hover:opacity-100 ${isDark ? "text-slate-300" : "text-emerald-900"}`
-                  }`}
-                >
-                  {t[range]}
-                </button>
-              ))}
+            {/* Desktop Time Range Selector */}
+            <div className="hidden md:flex">
+              <div
+                className={`flex rounded-full p-1 transition-all ${isDark ? "bg-slate-800/70" : "bg-emerald-100/70"}`}
+              >
+                {["1h", "24h", "7d", "30d"].map(range => (
+                  <button
+                    key={range}
+                    onClick={() => handleTimeRangeChange(range)}
+                    className={`px-3 py-1.5 text-[11px] md:text-xs rounded-full transition-all font-black uppercase tracking-widest ${
+                      timeRange === range
+                        ? `shadow-md ${isDark ? "bg-slate-600 text-white" : "bg-white text-emerald-800"}`
+                        : `opacity-60 hover:opacity-100 ${isDark ? "text-slate-300" : "text-emerald-900"}`
+                    }`}
+                  >
+                    {t[range]}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <button
               onClick={onClose}
-              className={`group p-2 rounded-full transition-all ${isDark ? "hover:bg-white/10 text-white" : "hover:bg-black/5 text-emerald-950"}`}
+              className={`absolute top-6 right-6 md:static group p-2 rounded-full transition-all ${isDark ? "hover:bg-white/10 text-white" : "hover:bg-black/5 text-emerald-950"}`}
             >
               <X size={32} className="transition-transform group-hover:rotate-90" />
             </button>
           </div>
         </div>
-
         <div className="p-6 md:p-10">
           {loading || isFetchingRange ? (
             <div className="h-[250px] flex items-center justify-center">
@@ -240,6 +247,27 @@ const TrendPopup = ({
               <p className="text-xs opacity-50">Check if the ESP32 is logging to "weather"</p>
             </div>
           )}
+        </div>
+
+        {/* Mobile Time Range Selector */}
+        <div className="flex md:hidden justify-center pb-6 px-6">
+          <div
+            className={`flex rounded-full p-1 transition-all w-full justify-center ${isDark ? "bg-slate-800/70" : "bg-emerald-100/70"}`}
+          >
+            {["1h", "24h", "7d", "30d"].map(range => (
+              <button
+                key={range}
+                onClick={() => handleTimeRangeChange(range)}
+                className={`flex-1 px-3 py-1.5 text-[11px] rounded-full transition-all font-black uppercase tracking-widest ${
+                  timeRange === range
+                    ? `shadow-md ${isDark ? "bg-slate-600 text-white" : "bg-white text-emerald-800"}`
+                    : `opacity-60 hover:opacity-100 ${isDark ? "text-slate-300" : "text-emerald-900"}`
+                }`}
+              >
+                {t[range]}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className={`h-2 w-full ${isDark ? "bg-emerald-500/20" : "bg-emerald-600/10"}`} />

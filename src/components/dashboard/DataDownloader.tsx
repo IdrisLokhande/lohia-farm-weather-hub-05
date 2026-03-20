@@ -192,6 +192,8 @@ const DataDownloader = ({ isDark = true }: DataDownloaderProps) => {
                 <button
                   onClick={() => setShowModal(false)}
                   className="opacity-50 hover:opacity-100 transition-opacity"
+                  title="Close"
+                  aria-label="Close date range modal"
                 >
                   <X size={20} />
                 </button>
@@ -199,22 +201,32 @@ const DataDownloader = ({ isDark = true }: DataDownloaderProps) => {
 
               <div className="space-y-4 sm:space-y-6">
                 <div>
-                  <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1 sm:mb-1.5">
+                  <label
+                    htmlFor="start-date"
+                    className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1 sm:mb-1.5"
+                  >
                     Start Date
                   </label>
                   <input
                     type="date"
+                    id="start-date"
+                    placeholder="YYYY-MM-DD"
                     value={startDate}
                     onChange={e => setStartDate(e.target.value)}
                     className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 ${isDark ? "bg-slate-950 border-white/10 [color-scheme:dark]" : "bg-slate-50 border-black/10"}`}
                   />
                 </div>
                 <div>
-                  <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1 sm:mb-1.5">
+                  <label
+                    htmlFor="end-date"
+                    className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1 sm:mb-1.5"
+                  >
                     End Date
                   </label>
                   <input
                     type="date"
+                    id="end-date"
+                    placeholder="YYYY-MM-DD"
                     value={endDate}
                     onChange={e => setEndDate(e.target.value)}
                     className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 ${isDark ? "bg-slate-950 border-white/10 [color-scheme:dark]" : "bg-slate-50 border-black/10"}`}

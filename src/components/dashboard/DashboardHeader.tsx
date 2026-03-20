@@ -21,7 +21,7 @@ const DashboardHeader = ({
     <header className="sticky top-0 z-50 glass-card border-b">
       <div className="container mx-auto flex items-center justify-between px-4 py-3 md:px-6">
         {/* Left Side: Logo & Title */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           {/* Logo scales up to 65px ONLY at 530px+ */}
           <div className="relative flex h-[53px] w-[53px] min-[530px]:h-[65px] min-[530px]:w-[65px] shrink-0 items-center justify-center rounded-full border-2 border-primary bg-primary/10 p-1.5 shadow-sm overflow-hidden transition-all duration-300">
             <img
@@ -38,7 +38,7 @@ const DashboardHeader = ({
           <span
             className="font-sans text-lg min-[530px]:text-xl font-bold text-foreground 
             [font-family:'Noto_Sans_Devanagari',sans-serif] [font-variant-ligatures:common-ligatures] 
-            [text-rendering:optimizeLegibility] truncate max-w-[80px] xxs:max-w-none pl-1 md:pl-2 transition-all"
+            [text-rendering:optimizeLegibility] truncate pl-1 md:pl-2 transition-all"
           >
             {t.dashBoardTitle}
           </span>
