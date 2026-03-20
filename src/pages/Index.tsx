@@ -20,13 +20,14 @@ const translations = {
     realTime: "Real-time monitoring",
     heroTitle: "Weather Station : Lohia Farm",
     heroDesc: "Precision Weather Monitoring",
-    notConnected: "Not connected to Lohia_Farm Wi-Fi",
+    notConnected: "Not Connected through WeatherStation",
     systemStatus: "System Status",
     sensors: "Sensors",
     lupdate: "Last Update",
     uptime: "Uptime",
     live: "Live",
     online: "Online",
+    asleep: "Device Asleep / Offline",
     majorPollutant: "Major Pollutant seems to be",
     min: "MIN",
     max: "MAX",
@@ -54,9 +55,6 @@ const translations = {
     "24h": "24 Hours",
     "7d": "7 Days",
     "30d": "1 Month",
-    h: "h",
-    m: "m",
-    s: "s",
     export: "Export",
     exporting: "Exporting...",
     todayData: "Today's Data",
@@ -83,6 +81,7 @@ const translations = {
     uptime: "अपटाइम",
     live: "लाइव",
     online: "ऑनलाइन",
+    asleep: "डिवाइस स्लीप/ऑफ़लाइन",
     majorPollutant: "मुख्य प्रदूषक है",
     min: "न्यूनतम",
     max: "अधिकतम",
@@ -110,9 +109,6 @@ const translations = {
     "24h": "२४ घंटे",
     "7d": "७ दिन",
     "30d": "१ महीना",
-    h: "घं",
-    m: "मि",
-    s: "से",
     export: "निर्यात करें",
     exporting: "निर्यात हो रहा है...",
     todayData: "आज का डेटा",
@@ -139,6 +135,7 @@ const translations = {
     uptime: "अपटाइम",
     live: "लाइव्ह",
     online: "ऑनलाइन",
+    asleep: "डिव्हाइस झोपलेले / ऑफलाइन",
     majorPollutant: "मुख्य प्रदूषक आहे",
     min: "किमान",
     max: "कमाल",
@@ -166,9 +163,6 @@ const translations = {
     "24h": "२४ तास",
     "7d": "१ आठवडा",
     "30d": "१ महिना",
-    h: "ता",
-    m: "मि",
-    s: "से",
     export: "निर्यात करा",
     exporting: "निर्यात होत आहे...",
     todayData: "आजचा डेटा",
@@ -263,24 +257,38 @@ const Index = () => {
         m.target.value = formatValue(Number(m.val || 0));
         m.target.min = bounds.min;
         m.target.max = bounds.max;
-        // Status turns "offline" (gray) ONLY if the heartbeat/network is dead
-        m.target.status = isVisualOffline ? "offline" : /* existing logic */ "good";
       });
 
       // Recalculate Physics (stale data still allows feels-like calc)
       const curTemp = Number(liveData.temperature || 0);
       const curHum = Number(liveData.humidity || 0);
-      const feelsLikeTemp = WeatherPhysics.getFeelsLike(curTemp, curHum);
-      if (!isNaN(feelsLikeTemp)) {
-        baseData.environment.temperature.description = `${t.feelsLike} ${feelsLikeTemp.toFixed(1)} °C`;
-      }
-      // ... same for humidity/pressure descriptions ... (This logic is now safer)
-
-      // AQI
+      const curPre = Number(liveData.pressure || 0);
+      const curLux = Number(liveData.lux || 0);
       const a1 = Number(liveData.pm1 || 0),
         a25 = Number(liveData.pm25 || 0),
         a10 = Number(liveData.pm10 || 0);
+      const max = Math.max(a1, a25, a10);
+      const majorPollutant = max == a1 ? t.pm1 : max == a25 ? t.pm25 : max == a10 ? t.pm10 : t.none;
       const finalAQI = WeatherPhysics.calculateIndiaAQI(a25, a10);
+      const curCO2 = Number(liveData.co2 || 0); 
+      const feelsLikeTemp = WeatherPhysics.getFeelsLike(curTemp, curHum);
+      const vaporPressure = WeatherPhysics.getVaporPressure(curTemp, curHum);
+      const absoluteHumidity = WeatherPhysics.getAbsoluteHumidity(curTemp, curHum);
+
+      if (!isNaN(feelsLikeTemp)) {
+        baseData.environment.temperature.description = `${t.feelsLike} ${feelsLikeTemp.toFixed(1)} °C`;
+      }
+      if (!isNaN(vaporPressure)) {
+        baseData.environment.pressure.description = `${t.vaporPressure} ${vaporPressure.toFixed(1)} hPa`;
+      } 
+      if (!isNaN(absoluteHumidity)) {
+        baseData.environment.humidity.description = `${t.absoluteHumidity} ${absoluteHumidity.toFixed(1)} g/m³`;
+      } 
+      baseData.environment.lintensity.description = `${t.lintensityDesc}`;
+      baseData.co2.description = `${t.co2Desc}`;
+      baseData.airQuality.description = `${t.majorPollutant} ${majorPollutant}`; 
+
+      // AQI
       // We map every point in history to its calculated India AQI value
       const aqiHistory = history.map(point =>
         WeatherPhysics.calculateIndiaAQI(Number(point.pm25 || 0), Number(point.pm10 || 0))
@@ -306,7 +314,7 @@ const Index = () => {
       baseData.airQuality = {
         ...baseData.airQuality,
         value: formatValue(finalAQI, true),
-        unit: t.aqi,
+        unit: "AQI",
         min: formatValue(minAQI, true),
         max: formatValue(maxAQI, true),
         // 2. THIS IS THE KEY: The component looks for this specific property
@@ -319,34 +327,12 @@ const Index = () => {
     }
 
     if (systemStatus) {
-      const formatSystemValue = (val: string | number) => {
-        const num = Number(val);
-        if (isNaN(num)) return val; // Return as-is if not a number (e.g., "-")
-        return formatValue(num, true);
-      };
-
-      let translatedUptime = systemStatus.uptime || "---";
-      if (lang !== "en" && translatedUptime !== "---") {
-        // This regex finds all sequences of digits and translates them.
-        translatedUptime = translatedUptime.replace(/\d+/g, match => {
-          return formatValue(Number(match), true);
-        });
-
-        // Then, translate the units.
-        translatedUptime = translatedUptime
-          .replace(/h/g, t.h)
-          .replace(/m/g, t.m)
-          .replace(/s/g, t.s);
-      }
-
       // Explicitly assigning properties for robustness instead of spreading.
       baseData.systemStatus = {
-        uptime: translatedUptime,
-        sensorsOnline: formatSystemValue(systemStatus.sensorsOnline),
-        totalSensors: formatSystemValue(systemStatus.totalSensors),
-        lastUpdate: isVisualOffline
-          ? t.notConnected
-          : t[systemStatus.lastUpdate] || systemStatus.lastUpdate,
+        uptime: systemStatus.uptime,
+        sensorsOnline: systemStatus.sensorsOnline,
+        totalSensors: systemStatus.totalSensors,
+        lastUpdate: isVisualOffline ? t.notConnected : systemStatus.lastUpdate,
       };
     }
 
@@ -376,11 +362,11 @@ const Index = () => {
       />
 
       {/* Persistent Banner: Shows when ESP32 is sleeping/charging or Internet is out */}
-      {isVisualOffline && (
+      {isVisualOffline && heartbeatOffline && (
         <div className="bg-destructive/90 backdrop-blur-md text-white py-2 px-4 text-center flex items-center justify-center gap-2 border-b border-white/10 sticky top-0 z-50 transition-all">
           <WifiOff size={16} className="animate-pulse" />
-          <span className="font-bold uppercase tracking-widest text-[10px] md:text-xs">
-            {heartbeatOffline ? "Device Asleep / Offline" : t.notConnected}
+          <span className="font-bold uppercase tracking-widest text-[12px] md:text-[14px]">
+            {t.asleep}
           </span>
         </div>
       )}
