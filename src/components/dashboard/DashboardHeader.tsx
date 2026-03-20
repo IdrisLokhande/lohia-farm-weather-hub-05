@@ -40,7 +40,7 @@ const DashboardHeader = ({
             [font-family:'Noto_Sans_Devanagari',sans-serif] [font-variant-ligatures:common-ligatures] 
             [text-rendering:optimizeLegibility] truncate max-w-[80px] xxs:max-w-none pl-1 md:pl-2 transition-all"
           >
-            {t.title}
+            {t.dashBoardTitle}
           </span>
         </div>
 
