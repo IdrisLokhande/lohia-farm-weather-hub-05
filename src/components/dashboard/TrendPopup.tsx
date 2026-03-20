@@ -5,6 +5,7 @@ import { WeatherPhysics } from "@/lib/weather-physics";
 
 interface TrendPopupProps {
   activeMetric: string | null;
+  metricUnit: string;
   onClose: () => void;
   history: any[];
   isDark: boolean;
@@ -12,67 +13,93 @@ interface TrendPopupProps {
   loading?: boolean;
 }
 
-const TrendPopup = ({ activeMetric, onClose, history, isDark, t, loading }: TrendPopupProps) => {
+const TrendPopup = ({
+  activeMetric,
+  metricUnit,
+  onClose,
+  history,
+  isDark,
+  t,
+  loading,
+}: TrendPopupProps) => {
   if (!activeMetric) return null;
 
   // 1. Define the Title variable first
   // This handles the "temperature" vs "temp" mismatch in your translations
-  let displayTitle = t[activeMetric] || t['temp'];
+  let displayTitle = t[activeMetric] || t.temp;
+  if (activeMetric === "airQuality") {
+    displayTitle = t.aqi;
+  }
 
   // 2. Map the data for the chart
   const chartData = history.map(point => {
-  let val = 0;
+    let val = 0;
 
-  if (activeMetric === 'airQuality') {
-    // Calculate AQI for this specific point in history
-    displayTitle = t['aqi'];
-    val = WeatherPhysics.calculateIndiaAQI(Number(point.pm25 || 0), Number(point.pm10 || 0));
-  } else {
-    // Standard logic for temp, humidity, lux, etc.
-    let firebaseKey = activeMetric;
-    if (activeMetric === 'lintensity') firebaseKey = 'lux';
-    val = Number(point[firebaseKey] || 0);
-  }
+    if (activeMetric === "airQuality") {
+      val = WeatherPhysics.calculateIndiaAQI(Number(point.pm25 || 0), Number(point.pm10 || 0));
+    } else {
+      // Standard logic for temp, humidity, lux, etc.
+      let firebaseKey = activeMetric;
+      if (activeMetric === "lintensity") firebaseKey = "lux";
+      val = Number(point[firebaseKey] || 0);
+    }
 
-  return {
-    displayTime: point.displayTime,
-    fullTime: point.fullTime,
-    value: val
-  };
+    return {
+      id: point.id,
+      timestamp: point.timestamp,
+      displayTime: point.displayTime,
+      fullTime: point.fullTime,
+      value: val,
+    };
   });
+
+  // --- DEBUGGING ---
+  // This will log the exact data being sent to the chart component.
+  // Check your browser's developer console (F12) to see this output.
+  if (chartData.length > 0) {
+    console.log("[TrendPopup] Data prepared for chart:", { chartData, metricUnit });
+  }
+  // --- END DEBUGGING ---
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6">
-      <div 
-        className="absolute inset-0 bg-slate-950/40 backdrop-blur-md animate-in fade-in duration-500" 
-        onClick={onClose} 
+      <div
+        className="absolute inset-0 bg-slate-950/40 backdrop-blur-md animate-in fade-in duration-500"
+        onClick={onClose}
       />
 
-      <div className={`relative w-full max-w-4xl overflow-hidden rounded-[2.5rem] border shadow-2xl transition-all animate-in zoom-in-95 duration-300 ${
-        isDark 
-          ? "bg-slate-900/90 border-white/10 ring-1 ring-white/5" 
-          : "bg-white/85 border-black/10 ring-1 ring-inset ring-black/5"
-      }`}>
-        
+      <div
+        className={`relative w-full max-w-4xl overflow-hidden rounded-[2.5rem] border shadow-2xl transition-all animate-in zoom-in-95 duration-300 ${
+          isDark
+            ? "bg-slate-900/90 border-white/10 ring-1 ring-white/5"
+            : "bg-white/85 border-black/10 ring-1 ring-inset ring-black/5"
+        }`}
+      >
         <div className="flex items-start justify-between p-6 md:p-10 pb-0">
           <div className="flex items-center gap-4">
-            <div className={`p-3 rounded-2xl ${isDark ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-600/10 text-emerald-700'}`}>
+            <div
+              className={`p-3 rounded-2xl ${isDark ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-600/10 text-emerald-700"}`}
+            >
               <TrendingUp size={28} />
             </div>
             <div>
-              <h2 className={`text-2xl md:text-3xl font-black uppercase tracking-[0.2em] ${isDark ? 'text-white' : 'text-emerald-950'}`}>
+              <h2
+                className={`text-2xl md:text-3xl font-black uppercase tracking-[0.2em] ${isDark ? "text-white" : "text-emerald-950"}`}
+              >
                 {displayTitle}
               </h2>
               <div className="flex items-center gap-2 mt-1 opacity-60">
                 <Clock size={14} className={isDark ? "text-slate-400" : "text-emerald-900"} />
-                <p className={`text-xs font-bold uppercase tracking-widest ${isDark ? "text-slate-400" : "text-emerald-900"}`}>
+                <p
+                  className={`text-xs font-bold uppercase tracking-widest ${isDark ? "text-slate-400" : "text-emerald-900"}`}
+                >
                   Real-time Analytics (Last 1hr)
                 </p>
               </div>
             </div>
           </div>
-          
-          <button 
+
+          <button
             onClick={onClose}
             className={`group p-2 rounded-full transition-all ${
               isDark ? "hover:bg-white/10 text-white" : "hover:bg-black/5 text-emerald-950"
@@ -88,21 +115,23 @@ const TrendPopup = ({ activeMetric, onClose, history, isDark, t, loading }: Tren
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
             </div>
           ) : chartData.length > 0 ? (
-            <TrendChart 
-              title={displayTitle} 
-              data={chartData} 
+            <TrendChart
+              title={displayTitle}
+              data={chartData}
               color={isDark ? "#10b981" : "#059669"}
-              unit="" 
+              unit={metricUnit}
             />
           ) : (
             <div className="h-[250px] flex flex-col items-center justify-center text-center space-y-3">
-               <p className="font-bold text-muted-foreground uppercase tracking-widest">No data found</p>
-               <p className="text-xs opacity-50">Check if the ESP32 is logging to "weather"</p>
+              <p className="font-bold text-muted-foreground uppercase tracking-widest">
+                No data found
+              </p>
+              <p className="text-xs opacity-50">Check if the ESP32 is logging to "weather"</p>
             </div>
           )}
         </div>
-        
-        <div className={`h-2 w-full ${isDark ? 'bg-emerald-500/20' : 'bg-emerald-600/10'}`} />
+
+        <div className={`h-2 w-full ${isDark ? "bg-emerald-500/20" : "bg-emerald-600/10"}`} />
       </div>
     </div>
   );

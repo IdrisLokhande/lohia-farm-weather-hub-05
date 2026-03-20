@@ -130,7 +130,7 @@ const translations = {
 const Index = () => {
   const [isDark, setIsDark] = useState(true);
   const [lang, setLang] = useState("en");
-  const [activeTrend, setActiveTrend] = useState<string | null>(null);
+  const [activeTrend, setActiveTrend] = useState<{ key: string; unit: string } | null>(null);
   const [heartbeatOffline, setHeartbeatOffline] = useState(false);
 
   const t = translations[lang];
@@ -314,7 +314,11 @@ const Index = () => {
               data={key === "airQuality" || key === "co2" ? data[key] : data.environment[key]}
               enableShadow={!isDark}
               t={t}
-              onShowTrend={() => setActiveTrend(key)}
+              onShowTrend={() => {
+                const metricData =
+                  key === "airQuality" || key === "co2" ? data[key] : data.environment[key];
+                setActiveTrend({ key, unit: metricData.unit || "" });
+              }}
             />
           ))}
         </div>
@@ -374,11 +378,13 @@ const Index = () => {
       </main>
 
       <TrendPopup
-        activeMetric={activeTrend}
+        activeMetric={activeTrend?.key ?? null}
         onClose={() => setActiveTrend(null)}
+        metricUnit={activeTrend?.unit ?? ""}
         history={history}
         isDark={isDark}
         t={t}
+        loading={historyLoading}
       />
       <DashboardFooter />
     </div>
