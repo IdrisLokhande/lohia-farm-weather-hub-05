@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Server, TrendingUp, WifiOff, RefreshCcw, AlertTriangle } from "lucide-react"; 
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import LoadingOverlay from "@/components/dashboard/LoadingOverlay";
 import HeroSection from "@/components/dashboard/HeroSection";
 import MetricCard from "@/components/dashboard/MetricCard";
 import TrendChart from "@/components/dashboard/TrendChart";
@@ -116,16 +117,34 @@ const translations = {
 
 const Index = () => {
   const [isDark, setIsDark] = useState(true);
-  const [lang, setLang] = useState('en'); // 'en', 'hi', or 'mr'
-  const [activeTrend, setActiveTrend] = useState<string | null>(null); // State for Pop-up View
+  const [lang, setLang] = useState('en'); 
+  const [activeTrend, setActiveTrend] = useState<string | null>(null);
+  const [heartbeatOffline, setHeartbeatOffline] = useState(false);
   
   const t = translations[lang];  
 
-  // 1. Data Hooks
-  // Live feed for cards
+  // 1. Data Hooks (SWR handles the 'stale' data persistence here)
   const { liveData, systemStatus, isOffline, loading: liveLoading } = useFarmHub();
-  // Historical feed for charts
   const { history, loading: historyLoading } = useHistoricalData();
+
+  const isInitialSync = (liveLoading || historyLoading) && !liveData && history.length === 0;
+
+  // 2. Heartbeat Logic: Only for Visual Indicators
+  // We allow 150s (2.5 mins) to account for the 45s sleep + 15s active cycles
+  useEffect(() => {
+    const checkFreshness = () => {
+      if (!liveData?.timestamp) return;
+      const lastUpdate = new Date(liveData.timestamp).getTime();
+      const secondsSinceUpdate = (Date.now() - lastUpdate) / 1000;
+      setHeartbeatOffline(secondsSinceUpdate > 150);
+    };
+
+    const interval = setInterval(checkFreshness, 15000);
+    return () => clearInterval(interval);
+  }, [liveData]);
+
+  // UI state: True if browser is offline OR data is older than 2.5 mins
+  const isVisualOffline = isOffline || heartbeatOffline;
 
   const formatValue = (val) => {
     return new Intl.NumberFormat(lang === 'en' ? 'en-US' : (lang === 'hi' ? 'hi-IN' : 'mr-IN'), {
@@ -135,11 +154,24 @@ const Index = () => {
     }).format(val);
   };
 
-  // 2. Memoize the combined data object
+  // 3. Memoized Data Object
   const data = useMemo(() => {
     const baseData = getFarmData();
-    
-    // 1. Translation mappings
+    const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
+
+    const getBounds = (metricKey: string) => {
+      const firebaseKey = metricKey === 'lintensity' ? 'lux' : metricKey;
+      const values = history
+        .filter(h => new Date(h.timestamp).getTime() >= twentyFourHoursAgo)
+        .map(h => Number(h[firebaseKey]))
+        .filter(v => !isNaN(v) && v !== 0);
+      
+      return values.length === 0 
+        ? { min: '--', max: '--' } 
+        : { min: formatValue(Math.min(...values)), max: formatValue(Math.max(...values)) };
+    };
+
+    // Static Mappings
     baseData.co2.label = t.co2;
     baseData.airQuality.label = t.aqi;
     baseData.environment.temperature.label = t.temp;
@@ -147,156 +179,94 @@ const Index = () => {
     baseData.environment.pressure.label = t.pressure;
     baseData.environment.lintensity.label = t.lintensity;
 
-    // 2. Map System Status from the unified hook
+    // Use liveData if available (SWR will provide stale data if offline)
+    if (liveData) {
+      const metrics = [
+        { key: 'temperature', target: baseData.environment.temperature, val: liveData.temperature },
+        { key: 'humidity', target: baseData.environment.humidity, val: liveData.humidity },
+        { key: 'pressure', target: baseData.environment.pressure, val: liveData.pressure },
+        { key: 'lintensity', target: baseData.environment.lintensity, val: liveData.lux },
+        { key: 'co2', target: baseData.co2, val: liveData.co2 }
+      ];
+
+      metrics.forEach(m => {
+        const bounds = getBounds(m.key);
+        m.target.value = formatValue(Number(m.val || 0));
+        m.target.min = bounds.min;
+        m.target.max = bounds.max;
+        // Status turns "offline" (gray) ONLY if the heartbeat/network is dead
+        m.target.status = isVisualOffline ? "offline" : (/* existing logic */ "good");
+      });
+
+      // Recalculate Physics (stale data still allows feels-like calc)
+      const curTemp = Number(liveData.temperature || 0);
+      const curHum = Number(liveData.humidity || 0);
+      baseData.environment.temperature.description = `${t.feelsLike} ${WeatherPhysics.getFeelsLike(curTemp, curHum).toFixed(1)} °C`;
+      // ... same for humidity/pressure descriptions ...
+
+      // AQI
+      const a1 = Number(liveData.pm1 || 0), a25 = Number(liveData.pm25 || 0), a10 = Number(liveData.pm10 || 0);
+      baseData.airQuality.value = (
+        <div className="inline-flex items-baseline gap-3 xs:gap-4 lg:gap-6">
+          {[ {v: a1, l: "PM1.0"}, {v: a25, l: "PM2.5"}, {v: a10, l: "PM10.0"} ].map(pm => (
+            <div key={pm.l} className="flex flex-col">
+              <span className="text-2xl min-[790px]:text-3xl font-black leading-none">{formatValue(pm.v)}</span>
+              <span className="mt-1 text-[8px] sm:text-[10px] font-black uppercase tracking-widest opacity-50">{pm.l}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
     if (systemStatus) {
       baseData.systemStatus = {
         ...systemStatus,
-        lastUpdate: t[systemStatus.lastUpdate] || systemStatus.lastUpdate
+        lastUpdate: isVisualOffline ? t.notConnected : (t[systemStatus.lastUpdate] || systemStatus.lastUpdate)
       };
     }
 
-    // 3. Map Environmental Data from the liveData feed
-    if (liveData && !isOffline) {
-      // CO2 Mapping
-      const currentCO2 = Number(liveData.co2 || 0);
-      baseData.co2.value = formatValue(currentCO2);
-      baseData.co2.description = t.co2Desc;
-      baseData.co2.status = currentCO2 <= 800 ? "good" : (currentCO2 <= 1200 ? "moderate" : "poor");
-
-      // RESPONSIVE TRIPLE AQI VALUES
-      const a1 = Number(liveData.pm1 || 0);
-      const a25 = Number(liveData.pm25 || 0);
-      const a10 = Number(liveData.pm10 || 0);
-      const maxVal = Math.max(a1, a25, a10);
-      let major = maxVal === a1 ? t.pm1 : (maxVal === a25 ? t.pm25 : t.pm10);
-
-      baseData.airQuality.value = (
-        <div className="inline-flex items-baseline gap-3 xs:gap-4 lg:gap-6">
-          <div className="flex flex-col">
-            <span className="text-2xl min-[790px]:text-3xl font-black leading-none whitespace-nowrap">
-              {formatValue(a1)}
-            </span>
-            <span className="mt-1 text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-900/50 dark:text-slate-500">PM1.0</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-2xl min-[790px]:text-3xl font-black leading-none whitespace-nowrap">
-              {formatValue(a25)}
-            </span>
-            <span className="mt-1 text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-900/50 dark:text-slate-500">PM2.5</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-2xl min-[790px]:text-3xl font-black leading-none whitespace-nowrap">
-              {formatValue(a10)}
-            </span>
-            <span className="mt-1 text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-900/50 dark:text-slate-500">PM10.0</span>
-          </div>
-        </div>
-      );
-      baseData.airQuality.description = `${t.majorPollutant} ${major}`;
-
-      // Environmental Sensors with Physics and Thresholds
-      const curTemp = Number(liveData.temperature || 0);
-      const curHum = Number(liveData.humidity || 0);
-      const curPress = Number(liveData.pressure || 0);
-      const curLux = Number(liveData.lux || 0);
-
-      baseData.environment.temperature.value = formatValue(curTemp);
-      baseData.environment.temperature.status = (curTemp > 18 && curTemp < 30) ? "good" : "moderate";
-      baseData.environment.temperature.description = `${t.feelsLike} ${WeatherPhysics.getFeelsLike(curTemp, curHum).toFixed(1)} °C`;
-
-      baseData.environment.humidity.value = formatValue(curHum);
-      baseData.environment.humidity.status = (curHum > 40 && curHum < 70) ? "good" : "moderate";
-      baseData.environment.humidity.description = `${t.absoluteHumidity} ${WeatherPhysics.getAbsoluteHumidity(curTemp, curHum).toFixed(1)} g/m³`;
-
-      baseData.environment.pressure.value = formatValue(curPress);
-      baseData.environment.pressure.description = `${t.vaporPressure} ${WeatherPhysics.getVaporPressure(curTemp, curHum).toFixed(1)} hPa`;
-
-      baseData.environment.lintensity.value = formatValue(curLux);
-      baseData.environment.lintensity.status = curLux > 500 ? "good" : (curLux > 100 ? "moderate" : "poor");
-      baseData.environment.lintensity.description = t.lintensityDesc;
-
-    } else {
-      const sensors = [
-        baseData.environment.temperature, baseData.environment.humidity,
-        baseData.environment.pressure, baseData.environment.lintensity,
-        baseData.co2, baseData.airQuality
-      ];
-      sensors.forEach(s => s.status = "offline");
-    }
     return baseData;
-  }, [liveData, systemStatus, lang, t]);
+  }, [liveData, history, systemStatus, lang, t, isVisualOffline]);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDark);
   }, [isDark]);
 
   return (
-    <div 
-      className={`min-h-screen w-full transition-all duration-700 ease-in-out selection:bg-emerald-500/30 overflow-x-hidden
-        ${isDark 
-          ? "bg-[#020617] bg-[radial-gradient(circle_at_top_left,_#064e3b_0%,_transparent_35%),_radial-gradient(circle_at_bottom_right,_#022c22_0%,_transparent_30%)]" 
-          : "bg-[#fffaf5] bg-[radial-gradient(ellipse_at_center,_transparent_40%,_#ffedd5_75%,_#fed7aa_100%)]"
-        }`}
-    >
-      <DashboardHeader 
-        isDark={isDark}
-        onToggleTheme={() => setIsDark(!isDark)}
-        lang={lang}
-        onLanguageChange={setLang}
-        t={t} 
-      />
+    <div className={`min-h-screen w-full transition-all duration-700 ease-in-out selection:bg-emerald-500/30 overflow-x-hidden
+                     ${isDark ? "bg-[#020617] bg-[radial-gradient(circle_at_top_left,#064e3b_0%,_transparent_35%),_radial-gradient(circle_at_bottom_right,#022c22_0%,_transparent_30%)]"
+                              : "bg-[#fffaf5] bg-[radial-gradient(ellipse_at_center,transparent_40%,#ffedd5_75%,_#fed7aa_100%)]"}
+                   `}>
+      <DashboardHeader isDark={isDark} onToggleTheme={() => setIsDark(!isDark)} lang={lang} onLanguageChange={setLang} t={t} />
 
-      {isOffline && (
+      {/* Persistent Banner: Shows when ESP32 is sleeping/charging or Internet is out */}
+      {isVisualOffline && (
         <div className="bg-destructive/90 backdrop-blur-md text-white py-2 px-4 text-center flex items-center justify-center gap-2 border-b border-white/10 sticky top-0 z-50 transition-all">
           <WifiOff size={16} className="animate-pulse" />
           <span className="font-bold uppercase tracking-widest text-[10px] md:text-xs">
-            {t.notConnected}
+            {heartbeatOffline ? "Device Asleep / Offline" : t.notConnected}
           </span>
         </div>
       )}
+
+      {isInitialSync && <LoadingOverlay isDark={isDark} />}
 
       <HeroSection lang={lang} t={t} />
 
       <main className="container mx-auto px-4 py-6 md:px-6 relative z-10">
         <div className="grid gap-4 min-[850px]:grid-cols-2 min-[1300px]:grid-cols-3 grid-auto-rows-fr">
-          <MetricCard 
-            data={data.environment.humidity} 
-            enableShadow={!isDark} 
-            t={t} 
-            onShowTrend={() => setActiveTrend('humidity')} 
-          />
-          <MetricCard 
-            data={data.environment.pressure} 
-            enableShadow={!isDark} 
-            t={t} 
-            onShowTrend={() => setActiveTrend('pressure')} 
-          />
-          <MetricCard 
-            data={data.environment.temperature} 
-            enableShadow={!isDark} 
-            t={t} 
-            onShowTrend={() => setActiveTrend('temperature')} 
-          />
-          <MetricCard 
-            data={data.environment.lintensity} 
-            enableShadow={!isDark} 
-            t={t} 
-            onShowTrend={() => setActiveTrend('lintensity')} 
-          />
-          <MetricCard 
-            data={data.airQuality} 
-            enableShadow={!isDark} 
-            t={t} 
-            onShowTrend={() => setActiveTrend('airQuality')} 
-          />
-          <MetricCard 
-            data={data.co2} 
-            enableShadow={!isDark} 
-            t={t} 
-            onShowTrend={() => setActiveTrend('co2')} 
-          />
+          {['humidity', 'pressure', 'temperature', 'lintensity', 'airQuality', 'co2'].map((key) => (
+             <MetricCard 
+                key={key}
+                data={key === 'airQuality' || key === 'co2' ? data[key] : data.environment[key]} 
+                enableShadow={!isDark} 
+                t={t} 
+                onShowTrend={() => setActiveTrend(key)} 
+             />
+          ))}
         </div>
 
+        {/* System Status Section */}
         <section className="mt-12 mx-auto w-full max-w-2xl">
           <div className={`glass-card p-5 xs:p-6 md:p-10 rounded-[2rem] border relative overflow-hidden backdrop-blur-xl shadow-lg transition-all duration-700
             ${isDark ? 'bg-white/5 border-white/10' : 'bg-white/85 border-black/10'}`}
@@ -315,7 +285,7 @@ const Index = () => {
                 </h3>
               </div>
 
-              {!isOffline && liveData && (
+              {!isVisualOffline && liveData && (
                 <div className={`text-[10px] font-bold flex items-center gap-2 px-3 xs:px-4 py-1.5 rounded-full border backdrop-blur-sm transition-all shrink-0
                   ${isDark 
                     ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' 
@@ -337,16 +307,7 @@ const Index = () => {
         </section>
       </main>
 
-      {/* Detail View Layer */}
-      <TrendPopup 
-        activeMetric={activeTrend} 
-        onClose={() => setActiveTrend(null)} 
-        history={history} 
-        isDark={isDark} 
-        t={t}
-        loading={historyLoading}
-      />
-
+      <TrendPopup activeMetric={activeTrend} onClose={() => setActiveTrend(null)} history={history} isDark={isDark} t={t} />
       <DashboardFooter />
     </div>
   );
