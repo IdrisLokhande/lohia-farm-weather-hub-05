@@ -54,6 +54,9 @@ const translations = {
     "24h": "24 Hours",
     "7d": "7 Days",
     "30d": "1 Month",
+    h: "h",
+    m: "m",
+    s: "s",
     export: "Export",
     exporting: "Exporting...",
     todayData: "Today's Data",
@@ -88,7 +91,7 @@ const translations = {
     humidity: "आर्द्रता",
     lintensity: "प्रकाश की तीव्रता",
     pressure: "दबाव",
-    co2: "CO2",
+    co2: "सीओ२",
     pm1: "पीएम १.० (महीन कण/धुआं)",
     pm25: "पीएम २.५ (मध्यम धूल के कण)",
     pm10: "पीएम १०.० (धूल के मोटे कण)",
@@ -107,6 +110,9 @@ const translations = {
     "24h": "२४ घंटे",
     "7d": "७ दिन",
     "30d": "१ महीना",
+    h: "घं",
+    m: "मि",
+    s: "से",
     export: "निर्यात करें",
     exporting: "निर्यात हो रहा है...",
     todayData: "आज का डेटा",
@@ -141,7 +147,7 @@ const translations = {
     humidity: "आर्द्रता",
     lintensity: "प्रकाश तीव्रता",
     pressure: "दबाव",
-    co2: "CO2",
+    co2: "सीओ२",
     pm1: "पीएम १.० (अतिसूक्ष्म कण/धूर)",
     pm25: "पीएम २.५ (मध्यम धुळीचे कण)",
     pm10: "पीएम १०.० (धुळीचे मोठे कण)",
@@ -160,6 +166,9 @@ const translations = {
     "24h": "२४ तास",
     "7d": "१ आठवडा",
     "30d": "१ महिना",
+    h: "ता",
+    m: "मि",
+    s: "से",
     export: "निर्यात करा",
     exporting: "निर्यात होत आहे...",
     todayData: "आजचा डेटा",
@@ -310,11 +319,31 @@ const Index = () => {
     }
 
     if (systemStatus) {
+      const formatSystemValue = (val: string | number) => {
+        const num = Number(val);
+        if (isNaN(num)) return val; // Return as-is if not a number (e.g., "-")
+        return formatValue(num, true);
+      };
+
+      let translatedUptime = systemStatus.uptime || "---";
+      if (lang !== "en" && translatedUptime !== "---") {
+        // This regex finds all sequences of digits and translates them.
+        translatedUptime = translatedUptime.replace(/\d+/g, match => {
+          return formatValue(Number(match), true);
+        });
+
+        // Then, translate the units.
+        translatedUptime = translatedUptime
+          .replace(/h/g, t.h)
+          .replace(/m/g, t.m)
+          .replace(/s/g, t.s);
+      }
+
       // Explicitly assigning properties for robustness instead of spreading.
       baseData.systemStatus = {
-        uptime: systemStatus.uptime,
-        sensorsOnline: systemStatus.sensorsOnline,
-        totalSensors: systemStatus.totalSensors,
+        uptime: translatedUptime,
+        sensorsOnline: formatSystemValue(systemStatus.sensorsOnline),
+        totalSensors: formatSystemValue(systemStatus.totalSensors),
         lastUpdate: isVisualOffline
           ? t.notConnected
           : t[systemStatus.lastUpdate] || systemStatus.lastUpdate,
