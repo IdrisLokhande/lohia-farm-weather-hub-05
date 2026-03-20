@@ -15,7 +15,7 @@ import { WeatherPhysics } from "@/lib/weather-physics";
 
 const translations = {
   en: {
-    dashBoardTitle: "Team GEOsense",
+    dashBoardTitle: "GEOsense",
     liveMonitoring: "Live Monitoring",
     realTime: "Real-time monitoring",
     heroTitle: "Weather Station : Lohia Farm",
@@ -48,7 +48,7 @@ const translations = {
     hardwareUnreachable: "Hardware Unreachable",
   },
   hi: {
-    dashBoardTitle: "टीम जियोसेंस",
+    dashBoardTitle: "जियोसेंस",
     liveMonitoring: "लाइव मॉनिटरिंग",
     realTime: "वास्तविक समय में निगरानी",
     heroTitle: "मौसम स्टेशन: लोहिया फार्म",
@@ -81,7 +81,7 @@ const translations = {
     hardwareUnreachable: "हार्डवेयर पहुंच योग्य नहीं",
   },
   mr: {
-    dashBoardTitle: "टीम जिओसेन्स",
+    dashBoardTitle: "जिओसेन्स",
     liveMonitoring: "थेट देखरेख",
     realTime: "रिअल-टाइम मॉनिटरिंग",
     heroTitle: "हवामान स्टेशन: लोहिया फार्म",
@@ -206,6 +206,17 @@ const Index = () => {
 
       // AQI
       const a1 = Number(liveData.pm1 || 0), a25 = Number(liveData.pm25 || 0), a10 = Number(liveData.pm10 || 0);
+      const finalAQI = WeatherPhysics.calculateIndiaAQI(a25, a10);
+      // We map every point in history to its calculated India AQI value
+      const aqiHistory = history.map(point => 
+        WeatherPhysics.calculateIndiaAQI(Number(point.pm25 || 0), Number(point.pm10 || 0))
+      );
+
+      // Calculate Min/Max from the new AQI array
+      const minAQI = Math.min(...aqiHistory, finalAQI);
+      const maxAQI = Math.max(...aqiHistory, finalAQI);
+      
+      /*
       baseData.airQuality.value = (
         <div className="inline-flex items-baseline gap-3 xs:gap-4 lg:gap-6">
           {[ {v: a1, l: "PM1.0"}, {v: a25, l: "PM2.5"}, {v: a10, l: "PM10.0"} ].map(pm => (
@@ -216,6 +227,21 @@ const Index = () => {
           ))}
         </div>
       );
+      */
+
+      baseData.airQuality = {
+      ...baseData.airQuality,
+      value: finalAQI, // Plain number, not a <div>
+      unit: "AQI",
+      min: minAQI,
+      max: maxAQI,
+      // 2. THIS IS THE KEY: The component looks for this specific property
+      pmBreakdown: [
+       { l: "PM1.0", v: a1 },
+       { l: "PM2.5", v: a25 },
+       { l: "PM10.0", v: a10 }
+      ]      
+     };
     }
 
     if (systemStatus) {

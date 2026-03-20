@@ -54,5 +54,20 @@ export const WeatherPhysics = {
     // P_partial = P_total * (Concentration / 1,000,000)
     
     return totalPressureHpa * (ppm / 1000000);
-  }  
+  },  
+
+  calculateIndiaAQI: (pm25: number, pm10: number): number => {
+    const getSubIndex = (cp: number, breakpoints: number[][]) => {
+    const b = breakpoints.find(([bl, bh]) => cp >= bl && cp <= bh);
+    if (!b) return cp > breakpoints[breakpoints.length - 1][1] ? 500 : 0;
+    	const [bl, bh, il, ih] = b;
+    	return ((ih - il) / (bh - bl)) * (cp - bl) + il;
+    };
+
+    const pm25BP = [[0,30,0,50],[31,60,51,100],[61,90,101,200],[91,120,201,300],[121,250,301,400],[251,500,401,500]];
+    const pm10BP = [[0,50,0,50],[51,100,51,100],[101,250,101,200],[251,350,201,300],[351,430,301,400],[431,500,401,500]];
+
+    return Math.round(Math.max(getSubIndex(pm25, pm25BP), getSubIndex(pm10, pm10BP)));
+  }
+
 };
