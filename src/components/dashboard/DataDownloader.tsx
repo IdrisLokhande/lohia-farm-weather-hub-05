@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Download, Calendar, Database, Clock, X, ChevronDown, Loader2 } from "lucide-react";
 import { rtdb } from "@/lib/firebase";
 import { ref, get, query, orderByChild, startAt, endAt } from "firebase/database";
@@ -178,57 +179,61 @@ const DataDownloader = ({ isDark = true }: DataDownloaderProps) => {
       )}
 
       {/* Custom Range Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div
-            className={`w-full max-w-sm p-6 rounded-2xl border shadow-2xl ${isDark ? "bg-slate-900 border-white/10 text-white" : "bg-white border-black/10 text-emerald-950"}`}
-          >
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-black uppercase tracking-widest text-sm">Select Date Range</h3>
+      {showModal &&
+        createPortal(
+          <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/50 backdrop-blur-sm p-4">
+            <div
+              className={`w-full max-w-lg p-6 sm:p-8 rounded-2xl border shadow-2xl ${isDark ? "bg-slate-900 border-white/10 text-white" : "bg-white border-black/10 text-emerald-950"}`}
+            >
+              <div className="flex justify-between items-center mb-6 sm:mb-8">
+                <h3 className="font-black uppercase tracking-widest text-xs sm:text-sm">
+                  Select Date Range
+                </h3>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="opacity-50 hover:opacity-100 transition-opacity"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="space-y-4 sm:space-y-6">
+                <div>
+                  <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1 sm:mb-1.5">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={e => setStartDate(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 ${isDark ? "bg-slate-950 border-white/10 [color-scheme:dark]" : "bg-slate-50 border-black/10"}`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1 sm:mb-1.5">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={e => setEndDate(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 ${isDark ? "bg-slate-950 border-white/10 [color-scheme:dark]" : "bg-slate-50 border-black/10"}`}
+                  />
+                </div>
+              </div>
+
               <button
-                onClick={() => setShowModal(false)}
-                className="opacity-50 hover:opacity-100 transition-opacity"
+                onClick={() => fetchAndDownload("custom")}
+                disabled={loading}
+                className={`w-full mt-6 sm:mt-8 py-3 rounded-lg text-sm font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2 ${isDark ? "bg-emerald-500 text-slate-950 hover:bg-emerald-400" : "bg-emerald-600 text-white hover:bg-emerald-700"}`}
               >
-                <X size={20} />
+                {loading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                Download CSV
               </button>
             </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1.5">
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={e => setStartDate(e.target.value)}
-                  className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 ${isDark ? "bg-slate-950 border-white/10 [color-scheme:dark]" : "bg-slate-50 border-black/10"}`}
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1.5">
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={e => setEndDate(e.target.value)}
-                  className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 ${isDark ? "bg-slate-950 border-white/10 [color-scheme:dark]" : "bg-slate-50 border-black/10"}`}
-                />
-              </div>
-            </div>
-
-            <button
-              onClick={() => fetchAndDownload("custom")}
-              disabled={loading}
-              className={`w-full mt-6 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2 ${isDark ? "bg-emerald-500 text-slate-950 hover:bg-emerald-400" : "bg-emerald-600 text-white hover:bg-emerald-700"}`}
-            >
-              {loading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-              Download CSV
-            </button>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
