@@ -344,14 +344,27 @@ const Index = () => {
   }, [isDark]);
 
   useEffect(() => {
-    // Lock scroll if a trend popup is active
-    if (activeTrend) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
+  // Use whatever variable you have for the popup state (e.g., activeTrend)
+  if (activeTrend) { 
+    const scrollY = window.scrollY;
+    document.body.style.top = `-${scrollY}px`;
+    document.body.classList.add('no-scroll');
+  } else {
+    const scrollY = document.body.style.top;
+    document.body.classList.remove('no-scroll');
+    document.body.style.top = '';
+    
+    // Jump back to the position saved in the style
+    if (scrollY) {
+      window.scrollTo(0, parseInt(scrollY || '0') * -1);
     }
-    return () => { document.body.style.overflow = "unset"; };
-  }, [activeTrend]);
+  }
+
+  return () => {
+    document.body.classList.remove('no-scroll');
+    document.body.style.top = '';
+  };
+  }, [activeTrend]); // Only watch the popup state
 
   return (
     <div

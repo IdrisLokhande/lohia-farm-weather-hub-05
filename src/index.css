@@ -140,6 +140,22 @@
     border: 1px solid hsl(var(--glass-border));
   }
 
+  /* FIX: Prevent background shift and handle centering during scroll-lock */
+  .no-scroll {
+    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* FIX: Centering logic for fixed elements regardless of page height */
+  .center-fixed {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
   /* Hide scrollbar for Chrome, Safari and Opera */
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
