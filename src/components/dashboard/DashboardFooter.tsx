@@ -1,127 +1,108 @@
-import { useState, useEffect } from "react";
-import { createPortal } from "react-dom"; // For screen-centering fix
-import { Linkedin, ChevronDown, X } from "lucide-react";
+import { useState } from "react";
+import { Linkedin, ChevronDown } from "lucide-react";
+
 
 const team = [
-  { name: "Abdullah", role: "Hardware systems and Power optimization engineer", link: "https://www.linkedin.com/..." },
-  { name: "Hussain", role: "Electronics and robotics engineer", link: "https://www.linkedin.com/..." },
-  { name: "Mueez", role: "Data Analyst", link: "https://www.linkedin.com/..." },
-  { name: "Irfan", role: "Machine learning Engineer", link: "https://www.linkedin.com/..." },
-  { name: "Idris", role: "IoT and Backend Developer", link: "https://www.linkedin.com/in/idrislokhande" },
-  { name: "Zaid", role: "UI/UX Designer", link: "https://www.linkedin.com/..." },
-  { name: "Danish", role: "Data processing engineer", link: "https://www.linkedin.com/..." },
-  { name: "Rehan", role: "Frontend Developer", link: "https://www.linkedin.com/..." }
+  { name: "Abdullah", role: "Hardware systems and Power optimization engineer", link: "https://www.linkedin.com/in/abdullah-ansari-691aa7333?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" },
+  { name: "Hussain", role: "Electronics and robotics engineer", link: "https://www.linkedin.com/in/hussain-attar-2a362a305?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" },
+  { name: "Mueez", role: "Data Analyst", link: "https://www.linkedin.com/in/mueez-hajwani-8a80562b6?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" },
+  { name: "Irfan", role: "Machine learning Engineer", link: "https://www.linkedin.com/in/irfan-ali-shaikh-8130262b7?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" },
+  { name: "Idris", role: "IoT and Backend Developer", link: "https://www.linkedin.com/in/idrislokhande?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" },
+  { name: "Zaid", role: "UI/UX Designer", link: "https://www.linkedin.com/in/zaid-ashfak-pansare?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" },
+  { name: "Danish", role: "Data processing engineer", link: "https://www.linkedin.com/in/danish-khan-9a5791348?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" },
+  { name: "Rehan", role: "Frontend Developer", link: "https://www.linkedin.com/in/rehan-shaikh-4aa937379" }
 ];
 
 const DashboardFooter = () => {
   const [open, setOpen] = useState(false);
 
-  // FIX: Body Scroll Lock Logic
-  useEffect(() => {
-  if (open) {
-    // 1. Modern way to lock scroll without "jumping" to the top
-    document.body.style.overflow = 'hidden';
-    
-    // 2. (Optional) If you have a specific CSS class for modal overlays
-    document.body.classList.add('modal-open');
-  } else {
-    // 3. Simply release the lock
-    document.body.style.overflow = '';
-    document.body.classList.remove('modal-open');
-  }
-
-  // 4. Cleanup to prevent a "perma-locked" screen if the component unmounts
-  return () => {
-    document.body.style.overflow = '';
-    document.body.classList.remove('modal-open');
-  };
-  }, [open]);
-
-  // Define the Modal JSX
-  const modalContent = (
-    <div 
-      className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4 optimize-gpu md:p-6"
-      onClick={() => setOpen(false)}
-    >
-      <div 
-        className="w-full max-w-5xl max-h-[90dvh] overflow-y-auto rounded-[2.5rem] border border-white/10 
-          bg-gradient-to-br from-[#020617] to-[#064e3b] 
-          backdrop-blur-xl shadow-2xl p-6 md:p-10 relative scrollbar-hide animate-in zoom-in-95 duration-300"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={() => setOpen(false)}
-          className="absolute top-4 right-4 md:top-6 md:right-6 text-slate-400 hover:text-white transition-colors"
-        >
-          <X size={24} />
-        </button>
-
-        <h2 className="text-2xl md:text-4xl font-black text-center text-white tracking-widest mb-4 uppercase">
-          TEAM GEOsense
-        </h2>
-
-        <p className="text-slate-300 text-center max-w-2xl mx-auto mb-8 text-xs md:text-sm leading-relaxed font-medium">
-          GEOsense is a precision agriculture weather intelligence platform
-          providing real-time environmental monitoring including temperature,
-          humidity, pressure, CO₂ levels and air quality analytics.
-        </p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {team.map((member, i) => (
-            <a
-              key={i}
-              href={member.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group bg-white/5 hover:bg-emerald-500/10 border border-white/10 
-                rounded-2xl p-5 transition-all duration-300 shadow-md hover:shadow-emerald-500/20 flex flex-col items-center text-center"
-            >
-              <div className="relative mb-3">
-                <img
-                  src={`https://ui-avatars.com/api/?name=${member.name}&background=10b981&color=fff&bold=true`}
-                  alt={member.name}
-                  className="w-14 h-14 md:w-16 md:h-16 rounded-full group-hover:scale-110 transition-transform duration-300 border-2 border-emerald-500/20"
-                />
-              </div>
-
-              <p className="text-white text-sm md:text-base font-bold mb-1">
-                {member.name}
-              </p>
-
-              <p className="text-[10px] md:text-xs text-emerald-400 mb-3 uppercase tracking-tighter font-black leading-tight h-8 flex items-center justify-center">
-                {member.role}
-              </p>
-
-              <Linkedin
-                size={16}
-                className="text-blue-400 group-hover:text-blue-300 transition-colors"
-              />
-            </a>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
   return (
-    <footer className="mt-12 mb-8 text-center relative px-4">
+    <footer className="mt-12 text-center relative">
+
+      {/* ABOUT US DROPDOWN BUTTON */}
       <button
         onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-2 text-base md:text-lg font-black tracking-[0.2em] text-emerald-400 hover:text-emerald-300 transition uppercase"
+        className="inline-flex items-center gap-2 text-lg font-bold tracking-widest text-emerald-400 hover:text-emerald-300 transition"
       >
         ABOUT US
         <ChevronDown
           size={18}
-          className={`transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+          className={`transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
 
-      {/* Portal Modal */}
-      {open && createPortal(modalContent, document.body)}
+      {/* MODAL */}
+      {open && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50">
 
-      <p className="mt-6 text-[10px] md:text-xs text-slate-500 uppercase tracking-[0.3em] font-bold">
-        © 2026 GEOsense • Precision Agriculture
+          <div className="w-[94%] max-w-4xl rounded-3xl border border-white/10 
+            bg-gradient-to-br from-[#020617]/95 to-[#064e3b]/80 
+            backdrop-blur-xl shadow-2xl p-8 relative">
+
+            {/* CLOSE BUTTON */}
+            <button
+              onClick={() => setOpen(false)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-white text-lg"
+            >
+              ✕
+            </button>
+
+            {/* TITLE */}
+            <h2 className="text-4xl font-black text-center text-white tracking-widest mb-6">
+              TEAM GEOsense
+            </h2>
+
+            {/* PROJECT DESCRIPTION */}
+            <p className="text-slate-300 text-center max-w-2xl mx-auto mb-8 text-sm">
+              GEOsense is a precision agriculture weather intelligence platform
+              providing real-time environmental monitoring including temperature,
+              humidity, pressure, CO₂ levels and air quality analytics.
+            </p>
+
+            {/* MEMBER CARDS GRID */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+              {team.map((member, i) => (
+                <a
+                  key={i}
+                  href={member.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group bg-white/5 hover:bg-white/10 border border-white/10 
+                  rounded-2xl p-4 transition duration-300 shadow-md hover:shadow-emerald-500/20"
+                >
+                  <img
+                    src={`https://ui-avatars.com/api/?name=${member.name}&background=random`}
+                    className="w-16 h-16 rounded-full mx-auto mb-3 group-hover:scale-105 transition"
+                  />
+
+                  <p className="text-white text-sm font-semibold">
+                    {member.name}
+                  </p>
+
+                  <p className="text-xs text-emerald-400 mb-2">
+                    {member.role}
+                  </p>
+
+                  <Linkedin
+                    size={18}
+                    className="mx-auto text-blue-400 group-hover:text-blue-300"
+                  />
+                </a>
+              ))}
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
+      {/* COPYRIGHT */}
+      <p className="mt-4 text-xs text-slate-500">
+        © 2026 GEOsense
       </p>
+
     </footer>
   );
 };
