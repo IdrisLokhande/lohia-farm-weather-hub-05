@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useTransition } from "react";
 import { Server, TrendingUp, WifiOff, RefreshCcw, AlertTriangle } from "lucide-react";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import LoadingOverlay from "@/components/dashboard/LoadingOverlay";
@@ -183,6 +183,7 @@ const Index = () => {
   const [lang, setLang] = useState("en");
   const [activeTrend, setActiveTrend] = useState<{ key: string; unit: string } | null>(null);
   const [heartbeatOffline, setHeartbeatOffline] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const t = translations[lang];
 
@@ -397,7 +398,11 @@ const Index = () => {
       >
         <DashboardHeader
           isDark={isDark}
-          onToggleTheme={() => setIsDark(!isDark)}
+          onToggleTheme={() => {
+            startTransition(() => {
+              setIsDark(!isDark);
+            });
+          }}
           lang={lang}
           onLanguageChange={setLang}
           t={t}

@@ -141,8 +141,10 @@
   }
 
   .card-grid-item {
+    isolation: isolate; /* Creates a clean boundary for the renderer */
+    backface-visibility: hidden;
     content-visibility: auto;
-    contain-intrinsic-size: 1px 400px; /* Rough estimate of card height */
+    contain-intrinsic-size: 1px 600px; /* Rough estimate of card height */
     height: 100%;
   }
 
