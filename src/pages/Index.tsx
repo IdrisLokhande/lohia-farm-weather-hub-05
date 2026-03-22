@@ -344,27 +344,20 @@ const Index = () => {
   }, [isDark]);
 
   useEffect(() => {
-  // Use whatever variable you have for the popup state (e.g., activeTrend)
-  if (activeTrend) { 
-    const scrollY = window.scrollY;
-    document.body.style.top = `-${scrollY}px`;
-    document.body.classList.add('no-scroll');
+  if (activeTrend) {
+    // Simply lock the scroll without moving the body
+    document.body.style.overflow = 'hidden';
+    document.body.style.paddingRight = 'var(--scrollbar-gutter, 0px)'; // Prevents layout "jump"
   } else {
-    const scrollY = document.body.style.top;
-    document.body.classList.remove('no-scroll');
-    document.body.style.top = '';
-    
-    // Jump back to the position saved in the style
-    if (scrollY) {
-      window.scrollTo(0, parseInt(scrollY || '0') * -1);
-    }
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
   }
 
   return () => {
-    document.body.classList.remove('no-scroll');
-    document.body.style.top = '';
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
   };
-  }, [activeTrend]); // Only watch the popup state
+  }, [activeTrend]);
 
   return (
     <>
