@@ -52,7 +52,7 @@ const MetricCard = memo(({ data, enableShadow, t, onShowTrend }: MetricCardProps
   const containerClasses = useMemo(() => `
     relative overflow-hidden rounded-2xl p-4 min-[790px]:p-6 
     transition-[transform, opacity] duration-200
-    backdrop-blur-md border flex flex-col h-full
+    border flex flex-col h-full
     ${!enableShadow 
       ? "bg-slate-900/60 border-white/10 ring-1 ring-inset ring-white/10 shadow-none" 
       : "bg-white/75 border-black/[0.08] ring-1 ring-inset ring-black/[0.05] shadow-lg shadow-emerald-900/5"
