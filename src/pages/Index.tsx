@@ -341,6 +341,13 @@ const Index = () => {
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDark);
+
+    requestAnimationFrame(() => {
+    // Reading this property forces a synchronous style recalculation
+    const _ = document.body.offsetHeight;
+    // A 0,0 scroll tells the GPU: "Update all tiles now"
+    window.scrollBy(0, 0);
+    });
   }, [isDark]);
 
   useEffect(() => {

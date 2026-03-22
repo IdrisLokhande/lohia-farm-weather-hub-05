@@ -51,7 +51,7 @@ const MetricCard = memo(({ data, enableShadow, t, onShowTrend }: MetricCardProps
   // OPTIMIZATION: Specific transitions and slightly lower blur to save GPU memory
   const containerClasses = useMemo(() => `
     relative overflow-hidden rounded-2xl p-4 min-[790px]:p-6 
-    transition-[background-color,border-color,transform] duration-300
+    transition-[transform, opacity] duration-200
     backdrop-blur-md border flex flex-col h-full
     ${!enableShadow 
       ? "bg-slate-900/60 border-white/10 ring-1 ring-inset ring-white/10 shadow-none" 
