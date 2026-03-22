@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, memo } from "react";
 import { Wind, Thermometer, Droplets, Gauge, Sun, Cloud, AlertCircle, Check, TrendingUp, MoreHorizontal, X } from "lucide-react";
 import type { MetricCard as MetricCardType } from "@/lib/farmData";
 
@@ -31,7 +31,7 @@ interface MetricCardProps {
   onShowTrend: () => void;
 }
 
-const MetricCard = ({ data, enableShadow, t, onShowTrend }: MetricCardProps) => {
+const MetricCard = memo(({ data, enableShadow, t, onShowTrend }: MetricCardProps) => {
   const [showBreakdown, setShowBreakdown] = useState(false);
 
   if (!data) return null;
@@ -159,6 +159,6 @@ const MetricCard = ({ data, enableShadow, t, onShowTrend }: MetricCardProps) => 
       </div>
     </div>
   );
-};
+});
 
 export default MetricCard;
