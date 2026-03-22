@@ -117,6 +117,13 @@
     @apply border-border;
   }
 
+  *, *::before, *::after {
+    /* Only transition properties that don't trigger 'Layout' */
+    transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms; /* Keep it fast (150ms-300ms) to avoid "laggy" feel */
+  }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }
@@ -131,5 +138,16 @@
     background: hsl(var(--glass));
     backdrop-filter: blur(16px);
     border: 1px solid hsl(var(--glass-border));
+  }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
   }
 }

@@ -146,8 +146,6 @@ const TrendPopup = ({
 
   if (!activeMetric) return null;
 
-  // 1. Define the Title variable first
-  // This handles the "temperature" vs "temp" mismatch in your translations
   let displayTitle = t[activeMetric] || t.temp;
   if (activeMetric === "airQuality") {
     displayTitle = t.aqi;
@@ -155,54 +153,54 @@ const TrendPopup = ({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6">
+      {/* Backdrop */}
       <div
         role="button"
         tabIndex={0}
-        className="absolute inset-0 bg-slate-950/40 backdrop-blur-md animate-in fade-in duration-500"
+        className="absolute inset-0 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-500"
         onClick={onClose}
-        onKeyDown={e => {
-          if (e.key === "Enter" || e.key === " ") onClose();
-        }}
+        onKeyDown={e => { if (e.key === "Enter" || e.key === " ") onClose(); }}
         aria-label="Close popup"
       />
 
+      {/* Main Modal Container */}
       <div
-        className={`relative w-full max-w-4xl overflow-hidden rounded-[2.5rem] border shadow-2xl transition-all animate-in zoom-in-95 duration-300 ${
-          isDark
+        className={`relative w-full max-w-4xl 
+          /* FIX 1: Centering & Height */
+          max-h-[90dvh] flex flex-col
+          /* FIX 2: Modular Scrolling */
+          overflow-y-auto scrollbar-hide
+          rounded-[2.5rem] border shadow-2xl transition-all animate-in zoom-in-95 duration-300 
+          ${isDark
             ? "bg-slate-900/90 border-white/10 ring-1 ring-white/5"
             : "bg-white/85 border-black/10 ring-1 ring-inset ring-black/5"
-        }`}
+          }`}
+          /* Stopping click propagation so clicking inside doesn't close modal */
+          onClick={(e) => e.stopPropagation()}
       >
+        {/* Header Section */}
         <div className="relative flex flex-col md:flex-row md:items-center md:justify-between p-6 md:p-10 pb-0">
           <div className="flex flex-col md:flex-row items-center gap-4 text-center md:text-left">
-            <div
-              className={`p-3 rounded-2xl ${isDark ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-600/10 text-emerald-700"}`}
-            >
+            <div className={`p-3 rounded-2xl ${isDark ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-600/10 text-emerald-700"}`}>
               <TrendingUp size={28} />
             </div>
             <div>
-              <h2
-                className={`text-xl md:text-3xl font-black uppercase tracking-[0.2em] ${isDark ? "text-white" : "text-emerald-950"}`}
-              >
+              <h2 className={`text-xl md:text-3xl font-black uppercase tracking-[0.2em] ${isDark ? "text-white" : "text-emerald-950"}`}>
                 {displayTitle}
               </h2>
-              <div className="flex items-center gap-2 mt-1 opacity-60">
+              <div className="flex items-center gap-2 mt-1 opacity-60 justify-center md:justify-start">
                 <Clock size={14} className={isDark ? "text-slate-400" : "text-emerald-900"} />
-                <p
-                  className={`text-xs font-bold uppercase tracking-widest ${isDark ? "text-slate-400" : "text-emerald-900"}`}
-                >
+                <p className={`text-xs font-bold uppercase tracking-widest ${isDark ? "text-slate-400" : "text-emerald-900"}`}>
                   Real-time Analytics (Last {t[timeRange] || "1 Hour"})
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 md:gap-6">
+          <div className="flex items-center gap-4 md:gap-6 justify-center mt-4 md:mt-0">
             {/* Desktop Time Range Selector */}
             <div className="hidden md:flex">
-              <div
-                className={`flex rounded-full p-1 transition-all ${isDark ? "bg-slate-800/70" : "bg-emerald-100/70"}`}
-              >
+              <div className={`flex rounded-full p-1 transition-all ${isDark ? "bg-slate-800/70" : "bg-emerald-100/70"}`}>
                 {["1h", "24h", "7d", "30d"].map(range => (
                   <button
                     key={range}
@@ -227,7 +225,9 @@ const TrendPopup = ({
             </button>
           </div>
         </div>
-        <div className="p-6 md:p-10">
+
+        {/* Content Section (The Chart) */}
+        <div className="p-6 md:p-10 flex-grow">
           {loading || isFetchingRange ? (
             <div className="h-[250px] flex items-center justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
@@ -241,19 +241,15 @@ const TrendPopup = ({
             />
           ) : (
             <div className="h-[250px] flex flex-col items-center justify-center text-center space-y-3">
-              <p className="font-bold text-muted-foreground uppercase tracking-widest">
-                No data found
-              </p>
+              <p className="font-bold text-muted-foreground uppercase tracking-widest">No data found</p>
               <p className="text-xs opacity-50">Check if the ESP32 is logging to "weather"</p>
             </div>
           )}
         </div>
 
-        {/* Mobile Time Range Selector */}
-        <div className="flex md:hidden justify-center pb-6 px-6">
-          <div
-            className={`flex rounded-full p-1 transition-all w-full justify-center ${isDark ? "bg-slate-800/70" : "bg-emerald-100/70"}`}
-          >
+        {/* Mobile Time Range Selector (Always at bottom of card) */}
+        <div className="flex md:hidden justify-center pb-8 px-6">
+          <div className={`flex rounded-full p-1 transition-all w-full justify-center ${isDark ? "bg-slate-800/70" : "bg-emerald-100/70"}`}>
             {["1h", "24h", "7d", "30d"].map(range => (
               <button
                 key={range}
@@ -270,7 +266,8 @@ const TrendPopup = ({
           </div>
         </div>
 
-        <div className={`h-2 w-full ${isDark ? "bg-emerald-500/20" : "bg-emerald-600/10"}`} />
+        {/* Bottom Accent Bar */}
+        <div className={`h-2 w-full shrink-0 ${isDark ? "bg-emerald-500/20" : "bg-emerald-600/10"}`} />
       </div>
     </div>
   );

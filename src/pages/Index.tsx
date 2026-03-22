@@ -343,9 +343,19 @@ const Index = () => {
     document.documentElement.classList.toggle("dark", isDark);
   }, [isDark]);
 
+  useEffect(() => {
+    // Lock scroll if a trend popup is active
+    if (activeTrend) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => { document.body.style.overflow = "unset"; };
+  }, [activeTrend]);
+
   return (
     <div
-      className={`min-h-screen w-full transition-all duration-700 ease-in-out selection:bg-emerald-500/30 overflow-x-hidden
+      className={`min-h-screen w-full transition-all duration-200 ease-in-out transform-gpu selection:bg-emerald-500/30 overflow-x-hidden
                      ${
                        isDark
                          ? "bg-[#020617] bg-[radial-gradient(circle_at_top_left,#064e3b_0%,_transparent_35%),_radial-gradient(circle_at_bottom_right,#022c22_0%,_transparent_30%)]"
