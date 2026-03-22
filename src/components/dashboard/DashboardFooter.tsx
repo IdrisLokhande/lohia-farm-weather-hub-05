@@ -39,7 +39,7 @@ const DashboardFooter = () => {
   // Define the Modal JSX
   const modalContent = (
     <div 
-      className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4 md:p-6"
+      className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4 optimize-gpu md:p-6"
       onClick={() => setOpen(false)}
     >
       <div 

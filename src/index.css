@@ -156,6 +156,14 @@
     transform: translate(-50%, -50%);
   }
 
+  .optimize-gpu {
+    /* Forces GPU rendering to prevent white flashes */
+    backface-visibility: hidden;
+    perspective: 1000px;
+    transform: translateZ(0);
+    will-change: transform;
+  }
+
   /* Hide scrollbar for Chrome, Safari and Opera */
   .scrollbar-hide::-webkit-scrollbar {
     display: none;

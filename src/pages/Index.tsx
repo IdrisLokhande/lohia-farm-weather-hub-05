@@ -368,7 +368,7 @@ const Index = () => {
 
   return (
     <div
-      className={`min-h-screen w-full transition-all duration-200 ease-in-out transform-gpu selection:bg-emerald-500/30 overflow-x-hidden
+      className={`min-h-screen w-full transition-all duration-200 ease-in-out transform-gpu optimize-gpu selection:bg-emerald-500/30 overflow-x-hidden
                      ${
                        isDark
                          ? "bg-[#020617] bg-[radial-gradient(circle_at_top_left,#064e3b_0%,_transparent_35%),_radial-gradient(circle_at_bottom_right,#022c22_0%,_transparent_30%)]"

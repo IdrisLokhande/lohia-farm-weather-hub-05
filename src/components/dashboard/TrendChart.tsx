@@ -77,7 +77,7 @@ const TrendChart = ({ title, data, color, unit }: TrendChartProps) => {
   const uniqueTicks = [startTimestamp, endTimestamp].filter(t => t > 0);
 
   return (
-    <div className="glass-card rounded-xl p-2 md:p-5 relative border border-white/5 bg-slate-950/40 backdrop-blur-md min-h-[350px] w-full overflow-visible">
+    <div className="glass-card rounded-xl p-2 optimize-gpu md:p-5 relative border border-white/5 bg-slate-950/40 backdrop-blur-md min-h-[350px] w-full overflow-visible">
       {/* Style for the animated dots */}
       <style>{`
         @keyframes ping-ripple {

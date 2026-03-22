@@ -61,7 +61,7 @@ const MetricCard = ({ data, enableShadow, t, onShowTrend }: MetricCardProps) => 
   return (
     <div className={containerClasses}>
       {/* Top Gloss Luster */}
-      <div className={`absolute top-0 left-0 right-0 h-[1px] z-30
+      <div className={`absolute top-0 left-0 right-0 h-[1px] z-30 optimize-gpu
         ${!enableShadow 
           ? "bg-gradient-to-r from-transparent via-white/20 to-transparent" 
           : "bg-gradient-to-r from-transparent via-black/10 to-transparent"
