@@ -31,7 +31,7 @@ const SystemStatus = ({ status, isLight, t }: SystemStatusProps) => {
             <span className="font-medium">{t.lupdate}</span>
           </div>
           {/* Logic: No truncate on larger screens (md:max-w-none) */}
-          <span className="text-lg font-semibold text-right text-foreground truncate max-w-[110px] min-[410px]:max-w-none min-[410px]:overflow-visible min-[410px]:whitespace-nowrap">
+          <span className="text-lg font-semibold text-right text-foreground truncate max-w-[130px] min-[575px]:max-w-none min-[575px]:overflow-visible min-[575px]:whitespace-nowrap">
             {status.lastUpdate}
           </span>
         </div>

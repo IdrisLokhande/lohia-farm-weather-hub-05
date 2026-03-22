@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, memo } from "react";
 import {
   Area,
   AreaChart,
@@ -6,7 +6,7 @@ import {
   ResponsiveContainer,
   Tooltip,
   ReferenceDot,
-  ReferenceLine,
+  ReferenceArea,
   Label,
   XAxis,
   YAxis,
@@ -17,86 +17,56 @@ interface TrendChartProps {
   data: any[];
   color: string;
   unit: string;
+  range: string;
 }
 
-const TrendChart = ({ title, data, color, unit }: TrendChartProps) => {
+const TrendChart = ({ title, data, color, unit, range }: TrendChartProps) => {
   const hasData = data && data.length > 0;
-
-  // 1. Label Logic: Get first and last time strings for the X-Axis
-  // We now use timestamps for the axis, which is more robust for time-series data.
   const startTimestamp = hasData ? data[0].timestamp : 0;
   const endTimestamp = hasData ? data[data.length - 1].timestamp : 0;
 
-  // --- REFACTORED LOGIC WITH DEBUGGING ---
   const [minPoint, setMinPoint] = useState<any | null>(null);
   const [maxPoint, setMaxPoint] = useState<any | null>(null);
 
   useEffect(() => {
-    // console.log("[TrendChart] Received data:", data); // Keep this commented unless actively debugging
     if (!data || data.length === 0) {
-      console.warn("[TrendChart] Data is empty, skipping min/max calculation.");
-      setMinPoint(null);
-      setMaxPoint(null);
-      return;
+      setMinPoint(null); setMaxPoint(null); return;
     }
-
-    let minP: any = null;
-    let maxP: any = null;
-
+    let minP = null, maxP = null;
     for (const point of data) {
-      const value = Number(point.value);
-      if (isNaN(value)) continue;
-
-      if (minP === null || value < Number(minP.value)) {
-        minP = point;
-      }
-      if (maxP === null || value > Number(maxP.value)) {
-        maxP = point;
-      }
+      if (point.value === null) continue;
+      const val = Number(point.value);
+      if (!minP || val < Number(minP.value)) minP = point;
+      if (!maxP || val > Number(maxP.value)) maxP = point;
     }
-
-    // console.log("[TrendChart] Calculated Min/Max points:", { minP, maxP });
-
-    setMinPoint(minP);
-    setMaxPoint(maxP);
+    setMinPoint(minP); setMaxPoint(maxP);
   }, [data]);
-  // --- END REFACTORED LOGIC ---
 
-  const values = data.map(d => Number(d.value)).filter(v => !isNaN(v));
+  const values = data.map(d => d.value).filter(v => v !== null && !isNaN(v));
   const minVal = values.length ? Math.min(...values) : 0;
   const maxVal = values.length ? Math.max(...values) : 100;
+  const yPadding = (maxVal - minVal) * 0.2 || 5;
+  const yDomain = [minVal - yPadding, maxVal + yPadding];
 
-  // Add 20% padding to make space for min/max labels
-  const range = maxVal - minVal;
-  const padding = range === 0 ? 5 : range * 0.2;
-  const yDomain = [minVal - padding, maxVal + padding];
+  const gaps = data.filter(d => d.isGapMarker);
 
-  const areMinMaxSame = minPoint && maxPoint && minPoint.id === maxPoint.id;
-
-  // We now only show start and end ticks on the axis. Min/Max times are in the labels.
-  const uniqueTicks = [startTimestamp, endTimestamp].filter(t => t > 0);
+  const formatXAxis = (tickItem: number) => {
+    const date = new Date(tickItem);
+    return range === "1h" || range === "24h" 
+      ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      : date.toLocaleDateString([], { month: "short", day: "numeric" });
+  };
 
   return (
     <div className="glass-card rounded-xl p-2 optimize-gpu md:p-5 relative border border-white/5 bg-slate-950/40 backdrop-blur-md min-h-[350px] w-full overflow-visible">
-      {/* Style for the animated dots */}
       <style>{`
-        @keyframes ping-ripple {
-          75%, 100% {
-            transform: scale(2);
-            opacity: 0;
-          }
-        }
-        .ping-dot > circle {
-          transform-origin: center;
-          transform-box: fill-box;
-          animation: ping-ripple 1s cubic-bezier(0, 0, 0.2, 1) infinite;
-        }
+        @keyframes ping-ripple { 75%, 100% { transform: scale(2); opacity: 0; } }
+        .ping-dot > circle { transform-origin: center; transform-box: fill-box; animation: ping-ripple 1s cubic-bezier(0, 0, 0.2, 1) infinite; }
       `}</style>
 
-      {/* Header Section inside the chart card */}
       <div className="flex justify-between items-center mb-6 px-2">
         <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground opacity-70">
-          {title} Trend
+          {title} ({range})
         </h3>
         {hasData && (
           <div className="flex items-center gap-2">
@@ -104,17 +74,11 @@ const TrendChart = ({ title, data, color, unit }: TrendChartProps) => {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
             </span>
-            <span className="text-[9px] font-bold text-emerald-500/80 uppercase tracking-widest">
-              Live
-            </span>
+            <span className="text-[9px] font-bold text-emerald-500/80 uppercase tracking-widest">Live Window</span>
           </div>
         )}
       </div>
 
-      {/* FIX: Fixed height container for ResponsiveContainer. 
-          Using 300px ensures it doesn't collapse and fits 
-          within the TrendPopup's 90dvh limit.
-      */}
       <div className="h-[280px] md:h-[320px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 45, right: 30, left: 30, bottom: 20 }}>
@@ -123,72 +87,70 @@ const TrendChart = ({ title, data, color, unit }: TrendChartProps) => {
                 <stop offset="0%" stopColor={color} stopOpacity={0.4} />
                 <stop offset="100%" stopColor={color} stopOpacity={0} />
               </linearGradient>
+
+              {/* 45 DEGREE RED HATCH PATTERN */}
+              <pattern 
+                id="offlineHatch" 
+                patternUnits="userSpaceOnUse" 
+                width="6" 
+                height="6" 
+                patternTransform="rotate(45)"
+              >
+                <line 
+                  x1="0" 
+                  y1="0" 
+                  x2="0" 
+                  y2="8" 
+                  stroke="#ff1e1e"
+                  strokeOpacity="0.7" 
+                  strokeWidth="2.5" 
+                />
+              </pattern>
             </defs>
 
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsla(var(--border), 0.1)" />
+            
+            {gaps.map((gap, idx) => (
+              <ReferenceArea
+                key={idx}
+                x1={gap.gapStart}
+                x2={gap.gapEnd}
+                fill="url(#offlineHatch)" // Apply the pattern here
+                stroke="rgba(239, 68, 68, 0.1)" // Slight border to define the zone
+                strokeWidth={1}
+              />
+            ))}
 
             <XAxis
               dataKey="timestamp"
               type="number"
               domain={["dataMin", "dataMax"]}
-              ticks={uniqueTicks}
-              interval={0}
-              padding={{ left: 10, right: 10 }}
-              tickLine={false}
+              ticks={[startTimestamp, endTimestamp]}
+              tickFormatter={formatXAxis}
+              tick={{ fontSize: 10, fontWeight: 700, fill: "hsl(var(--muted-foreground))" }}
               axisLine={false}
-              tick={props => {
-                const { x, y, payload } = props;
-                const isLast = payload.value === endTimestamp;
-                const formattedTime = new Date(payload.value).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                });
-                return (
-                  <text
-                    x={x}
-                    y={y + 15}
-                    fill="hsl(var(--muted-foreground))"
-                    fontSize={10}
-                    fontWeight="700"
-                    textAnchor={isLast ? "end" : "start"}
-                    className="opacity-50"
-                  >
-                    {formattedTime}
-                  </text>
-                );
-              }}
+              tickLine={false}
             />
-
-            <YAxis hide={true} domain={yDomain} />
-
+            <YAxis hide domain={yDomain} />
+            
             <Tooltip
               position={{ y: 0 }}
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const p = payload[0].payload;
-                  const val = Number(payload[0].value);
+                  if (p.isGapMarker) return null;
+                  const date = new Date(p.timestamp);
                   return (
-                    <div className="flex flex-col items-start bg-slate-900/90 backdrop-blur-xl border border-white/10 p-2.5 rounded-lg shadow-2xl transition-all duration-300">
-                      <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-tighter">
-                        {p.fullTime}
-                      </p>
-                      <p
-                        className="text-sm font-black flex items-center gap-2"
-                        style={{ color: color }}
-                      >
-                        {title}
-                        <span className="text-white/20 text-[10px]">|</span>
-                        <span className="text-slate-100">
-                          {isNaN(val) ? "---" : val.toFixed(1)}
-                          {unit}
-                        </span>
+                    <div className="bg-slate-900/95 backdrop-blur-xl border border-white/10 p-2.5 rounded-lg shadow-2xl">
+                      <p className="text-[9px] font-bold text-muted-foreground/60 uppercase">{date.toLocaleString()}</p>
+                      <p className="text-sm font-black flex items-center gap-2" style={{ color: color }}>
+                        {title} <span className="text-slate-100">{Number(payload[0].value).toFixed(1)}{unit}</span>
                       </p>
                     </div>
                   );
                 }
                 return null;
               }}
-              cursor={{ stroke: color, strokeWidth: 1, opacity: 0.4 }}
             />
 
             <Area
@@ -197,77 +159,26 @@ const TrendChart = ({ title, data, color, unit }: TrendChartProps) => {
               stroke={color}
               strokeWidth={3}
               fill={`url(#grad-${title})`}
-              animationDuration={1000}
-              connectNulls={true}
-              activeDot={{
-                r: 5,
-                stroke: "rgba(2, 6, 23, 1)",
-                strokeWidth: 2,
-                fill: color,
+              connectNulls={false}
+              isAnimationActive={false}
+              dot={(props: any) => {
+                const { cx, cy, payload } = props;
+                if (payload.isGapMarker || payload.value === null) return null;
+                return (
+                  <circle cx={cx} cy={cy} r={2} fill={color} fillOpacity={0.5} stroke={color} strokeOpacity={0.8} />
+                );
               }}
-            />
+              activeDot={{ r: 5, stroke: "rgba(2, 6, 23, 1)", strokeWidth: 2, fill: color }}
+            /> 
 
-            {/* Reference Lines for Min/Max */}
-            {maxPoint && !areMinMaxSame && (
-              <ReferenceLine
-                x={maxPoint.timestamp}
-                stroke="hsl(var(--muted-foreground))"
-                strokeOpacity={0.3}
-                strokeDasharray="3 3"
-              />
-            )}
-            {minPoint && (
-              <ReferenceLine
-                x={minPoint.timestamp}
-                stroke="hsl(var(--muted-foreground))"
-                strokeOpacity={0.3}
-                strokeDasharray="3 3"
-              />
-            )}
-
-            {/* Max Label */}
-            {maxPoint && !areMinMaxSame && (
-              <ReferenceDot 
-                x={maxPoint.timestamp} 
-                y={Number(maxPoint.value)} 
-                r={6} 
-                fill="#4ade80" 
-                stroke="#020617"
-                strokeWidth={2}
-                className="ping-dot"
-                isFront={true}
-              >
-                <Label
-                  value={`Max: ${Number(maxPoint.value).toFixed(1)}${unit}`}
-                  position="top"
-                  offset={12}
-                  fill="hsl(var(--muted-foreground))"
-                  fontSize={10}
-                  fontWeight="bold"
-                />
+            {maxPoint && minPoint && maxPoint.id !== minPoint.id && (
+              <ReferenceDot x={maxPoint.timestamp} y={maxPoint.value} r={5} fill="#4ade80" stroke="#020617" strokeWidth={2} className="ping-dot">
+                <Label value={`MAX`} position="top" offset={10} fill="#10b981" fontSize={9} fontWeight="bold" />
               </ReferenceDot>
             )}
-
-            {/* Min Label */}
             {minPoint && (
-              <ReferenceDot 
-                x={minPoint.timestamp} 
-                y={Number(minPoint.value)} 
-                r={6} 
-                fill={areMinMaxSame ? "#a3a3a3" : "#f87171"} 
-                stroke="#020617"
-                strokeWidth={2}
-                className="ping-dot"
-                isFront={true}
-              >
-                <Label
-                  value={areMinMaxSame ? `${Number(minPoint.value).toFixed(1)}${unit}` : `Min: ${Number(minPoint.value).toFixed(1)}${unit}`}
-                  position={areMinMaxSame ? "top" : "bottom"}
-                  offset={12}
-                  fill="hsl(var(--muted-foreground))"
-                  fontSize={10}
-                  fontWeight="bold"
-                />
+              <ReferenceDot x={minPoint.timestamp} y={minPoint.value} r={5} fill="#f87171" stroke="#020617" strokeWidth={2} className="ping-dot">
+                <Label value={`MIN`} position="bottom" offset={10} fill="#f87171" fontSize={9} fontWeight="bold" />
               </ReferenceDot>
             )}
           </AreaChart>
@@ -275,7 +186,6 @@ const TrendChart = ({ title, data, color, unit }: TrendChartProps) => {
       </div>
     </div>
   );
-
 };
 
-export default TrendChart;
+export default memo(TrendChart);
