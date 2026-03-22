@@ -343,10 +343,11 @@ const Index = () => {
     document.documentElement.classList.toggle("dark", isDark);
 
     requestAnimationFrame(() => {
-    // Reading this property forces a synchronous style recalculation
-    const _ = document.body.offsetHeight;
-    // A 0,0 scroll tells the GPU: "Update all tiles now"
-    window.scrollBy(0, 0);
+    requestAnimationFrame(() => {
+      // A 1px scroll is more effective at "waking up" the compositor than 0,0
+      window.scrollBy(0, 1);
+      window.scrollBy(0, -1);
+    });
     });
   }, [isDark]);
 
@@ -420,6 +421,7 @@ const Index = () => {
           {/* Metric Cards Grid */}
           <div className="grid gap-4 min-[850px]:grid-cols-2 min-[1300px]:grid-cols-3 grid-auto-rows-fr">
             {["humidity", "pressure", "temperature", "lintensity", "airQuality", "co2"].map(key => (
+              <div key={key} className="card-grid-item">
               <MetricCard
                 key={key}
                 data={key === "airQuality" || key === "co2" ? data[key] : data.environment[key]}
@@ -430,6 +432,7 @@ const Index = () => {
                   setActiveTrend({ key, unit: metricData.unit || "" });
                 }}
               />
+              </div>
             ))}
           </div>
 

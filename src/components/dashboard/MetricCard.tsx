@@ -61,7 +61,6 @@ const MetricCard = memo(({ data, enableShadow, t, onShowTrend }: MetricCardProps
 
   return (
     <div className={containerClasses}>
-      {/* 1. OPTIMIZED LUSTER: No optimize-gpu here. Simple gradient is faster. */}
       <div className={`absolute top-0 left-0 right-0 h-[1px] z-30 opacity-40
         ${!enableShadow 
           ? "bg-gradient-to-r from-transparent via-white/30 to-transparent" 

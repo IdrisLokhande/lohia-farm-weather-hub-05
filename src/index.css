@@ -140,6 +140,12 @@
     border: 1px solid hsl(var(--glass-border));
   }
 
+  .card-grid-item {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 400px; /* Rough estimate of card height */
+    height: 100%;
+  }
+
   /* FIX: Prevent background shift and handle centering during scroll-lock */
   .no-scroll {
     overflow: hidden !important;
