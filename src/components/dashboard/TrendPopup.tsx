@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { createPortal } from "react-dom"; // Added for teleportation
+import React, { useState, useEffect, useCallback, memo } from "react";
+import { createPortal } from "react-dom";
 import { X, TrendingUp, Clock } from "lucide-react";
 import TrendChart from "./TrendChart";
 import { WeatherPhysics } from "@/lib/weather-physics";
@@ -57,24 +57,27 @@ const TrendPopup = ({
     });
   }, []);
 
-  // Handle Scroll Lock and Centering Logic
+  // UPDATED: Non-Destructive Scroll Lock
   useEffect(() => {
     if (activeMetric) {
-      const scrollY = window.scrollY;
-      document.body.style.top = `-${scrollY}px`;
-      document.body.classList.add('no-scroll');
+      // 1. Lock natively without shifting body position
+      document.body.style.overflow = 'hidden';
+      document.documentElement.classList.add('is-locked');
       setTimeRange("1h");
     } else {
-      const scrollY = document.body.style.top;
-      document.body.classList.remove('no-scroll');
-      document.body.style.top = '';
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY || '0') * -1);
-      }
+      // 2. Use RAF to ensure the "Wake up" happens after the modal is gone
+      requestAnimationFrame(() => {
+        document.body.style.overflow = '';
+        document.documentElement.classList.remove('is-locked');
+        
+        // Force a zero-pixel scroll kick to wake up the GPU compositor
+        window.scrollBy(0, 0);
+      });
     }
+    
     return () => {
-      document.body.classList.remove('no-scroll');
-      document.body.style.top = '';
+      document.body.style.overflow = '';
+      document.documentElement.classList.remove('is-locked');
     };
   }, [activeMetric]);
 
@@ -158,16 +161,13 @@ const TrendPopup = ({
   let displayTitle = t[activeMetric] || t.temp;
   if (activeMetric === "airQuality") displayTitle = t.aqi;
 
-  // Define the Modal JSX
   const modalContent = (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-6 isolate overflow-hidden">
-      {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-500"
         onClick={onClose}
       />
 
-      {/* Main Modal Container */}
       <div
         className={`relative w-full max-w-4xl max-h-[90dvh] flex flex-col overflow-hidden
           rounded-[2.5rem] border shadow-2xl transition-all animate-in zoom-in-95 duration-300 
@@ -177,7 +177,6 @@ const TrendPopup = ({
           }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header Section */}
         <div className={`sticky top-0 z-20 p-6 md:p-10 pb-4 backdrop-blur-md ${isDark ? "bg-slate-900/50" : "bg-white/50"}`}>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div className="flex flex-col md:flex-row items-center gap-4 text-center md:text-left">
@@ -206,7 +205,6 @@ const TrendPopup = ({
           </div>
         </div>
 
-        {/* Content Section */}
         <div className="flex-grow overflow-y-auto scrollbar-hide px-6 md:px-10 pb-6">
           {loading || isFetchingRange ? (
             <div className="min-h-[250px] flex items-center justify-center">
@@ -227,7 +225,6 @@ const TrendPopup = ({
             </div>
           )}
 
-          {/* Mobile Selector */}
           <div className="flex md:hidden justify-center mt-6">
             <div className={`flex rounded-full p-1 w-full justify-center ${isDark ? "bg-slate-800/70" : "bg-emerald-100/70"}`}>
               {["1h", "24h", "7d", "30d"].map(range => (
@@ -247,7 +244,6 @@ const TrendPopup = ({
           </div>
         </div>
 
-        {/* Desktop Selector */}
         <div className="hidden md:flex justify-end p-6 pt-0">
           <div className={`flex rounded-full p-1 ${isDark ? "bg-slate-800/70" : "bg-emerald-100/70"}`}>
             {["1h", "24h", "7d", "30d"].map(range => (
@@ -269,8 +265,8 @@ const TrendPopup = ({
     </div>
   );
 
-  // Use Portal to attach to document.body
   return createPortal(modalContent, document.body);
 };
 
-export default TrendPopup;
+// EXPORT WITH MEMO
+export default memo(TrendPopup);

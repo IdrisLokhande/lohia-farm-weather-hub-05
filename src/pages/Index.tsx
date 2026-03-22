@@ -345,17 +345,28 @@ const Index = () => {
 
   useEffect(() => {
   if (activeTrend) {
-    // Simply lock the scroll without moving the body
+    // 1. Lock the scroll natively
     document.body.style.overflow = 'hidden';
-    document.body.style.paddingRight = 'var(--scrollbar-gutter, 0px)'; // Prevents layout "jump"
+    document.body.style.paddingRight = 'var(--scrollbar-gutter, 0px)';
+    document.documentElement.classList.add('is-locked');
   } else {
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
+    // 2. Use requestAnimationFrame to ensure the unlock happens smoothly
+    // after the modal state is cleared
+    requestAnimationFrame(() => {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+      document.documentElement.classList.remove('is-locked');
+
+      // 3. THE KICK: Force the browser to re-rasterize off-screen cards
+      // without actually moving the scroll position.
+      window.scrollBy(0, 0);
+    });
   }
 
   return () => {
     document.body.style.overflow = '';
     document.body.style.paddingRight = '';
+    document.documentElement.classList.remove('is-locked');
   };
   }, [activeTrend]);
 
