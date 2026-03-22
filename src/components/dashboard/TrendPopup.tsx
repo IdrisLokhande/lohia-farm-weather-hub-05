@@ -174,6 +174,8 @@ const TrendPopup = ({
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-6 isolate overflow-hidden">
       <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-500" onClick={onClose} />
       <div className={`relative w-full max-w-4xl max-h-[90dvh] flex flex-col overflow-hidden rounded-[2.5rem] border shadow-2xl transition-all animate-in zoom-in-95 duration-300 ${isDark ? "bg-slate-900/95 border-white/10 ring-1 ring-white/5" : "bg-white/90 border-black/10 ring-1 ring-inset ring-black/5"}`} onClick={(e) => e.stopPropagation()}>
+        
+        {/* HEADER */}
         <div className={`sticky top-0 z-20 p-6 md:p-10 pb-4 backdrop-blur-md ${isDark ? "bg-slate-900/50" : "bg-white/50"}`}>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div className="flex flex-col md:flex-row items-center gap-4 text-center md:text-left">
@@ -193,6 +195,8 @@ const TrendPopup = ({
             </button>
           </div>
         </div>
+
+        {/* CHART AREA */}
         <div className="flex-grow overflow-y-auto scrollbar-hide px-6 md:px-10 pb-6">
           {loading || isFetchingRange ? (
             <div className="min-h-[250px] flex items-center justify-center">
@@ -207,30 +211,47 @@ const TrendPopup = ({
               <p className="font-bold text-muted-foreground uppercase tracking-widest text-sm">No data found</p>
             </div>
           )}
-          <div className="flex md:hidden justify-center mt-6">
-            <div className={`flex rounded-full p-1 w-full justify-center ${isDark ? "bg-slate-800/70" : "bg-emerald-100/70"}`}>
+
+          {/* MOBILE BUTTONS - BOLDER & LARGER */}
+          <div className="flex md:hidden justify-center mt-10">
+            <div className={`flex rounded-full p-2 w-full max-w-[340px] mx-auto gap-1.5 ${isDark ? "bg-slate-800/80 shadow-inner" : "bg-emerald-100/80 shadow-inner"}`}>
               {["1h", "24h", "7d", "30d"].map(range => (
-                <button key={range} onClick={() => handleTimeRangeChange(range)} className={`flex-1 px-3 py-1.5 text-[11px] rounded-full font-black uppercase tracking-widest transition-all ${timeRange === range ? `shadow-md ${isDark ? "bg-slate-600 text-white" : "bg-white text-emerald-800"}` : `opacity-60 ${isDark ? "text-slate-300" : "text-emerald-900"}`}`}>
-                  {t[range]}
+                <button 
+                  key={range} 
+                  onClick={() => handleTimeRangeChange(range)} 
+                  className={`flex-1 flex flex-col items-center justify-center py-3 rounded-2xl transition-all duration-300 ${timeRange === range ? `shadow-xl scale-[1.08] z-10 ${isDark ? "bg-slate-600 text-white" : "bg-white text-emerald-900"}` : `opacity-40 ${isDark ? "text-slate-300" : "text-emerald-900"}`}`}
+                >
+                  <span className="text-sm font-black leading-none">{t[range].split(' ')[0]}</span>
+                  <span className="text-[9px] font-black uppercase tracking-tighter mt-0.5">{t[range].split(' ')[1]}</span>
                 </button>
               ))}
             </div>
           </div>
         </div>
-        <div className="hidden md:flex justify-end p-6 pt-0">
-          <div className={`flex rounded-full p-1 ${isDark ? "bg-slate-800/70" : "bg-emerald-100/70"}`}>
+
+        {/* DESKTOP BUTTONS - CENTERED & LARGE */}
+        <div className="hidden md:flex justify-center p-10 pt-0">
+          <div className={`flex rounded-full p-2 gap-3 ${isDark ? "bg-slate-800/70" : "bg-emerald-100/70"}`}>
             {["1h", "24h", "7d", "30d"].map(range => (
-              <button key={range} onClick={() => handleTimeRangeChange(range)} className={`px-4 py-2 text-xs rounded-full font-black uppercase transition-all ${timeRange === range ? "bg-white text-emerald-800 shadow-sm" : "opacity-50"}`}>
-                {t[range]}
+              <button 
+                key={range} 
+                onClick={() => handleTimeRangeChange(range)} 
+                className={`flex items-baseline gap-2 px-8 py-3 rounded-full transition-all duration-300 ${timeRange === range ? `shadow-lg scale-105 ${isDark ? "bg-slate-600 text-white" : "bg-white text-emerald-900"}` : `opacity-40 hover:opacity-100 ${isDark ? "text-slate-300" : "text-emerald-950"}`}`}
+              >
+                <span className="text-base font-black">{t[range].split(' ')[0]}</span>
+                <span className="text-xs font-black uppercase tracking-widest opacity-80">{t[range].split(' ')[1]}</span>
               </button>
             ))}
           </div>
         </div>
+
         <div className={`h-2 w-full shrink-0 ${isDark ? "bg-emerald-500/20" : "bg-emerald-600/10"}`} />
       </div>
     </div>
   );
+
   return createPortal(modalContent, document.body);
+
 };
 
 export default memo(TrendPopup);
