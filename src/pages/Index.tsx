@@ -400,7 +400,7 @@ const Index = () => {
 
         <main className="container mx-auto px-4 py-6 md:px-6 relative z-10">
           {/* Metric Cards Grid */}
-          <div className="grid gap-4 min-[850px]:grid-cols-2 min-[1300px]:grid-cols-3 grid-auto-rows-fr">
+          <div className="grid gap-4 min-[850px]:grid-cols-2 min-[1300px]:grid-cols-3 will-change-transform transform-gpu grid-auto-rows-fr">
             {["humidity", "pressure", "temperature", "lintensity", "airQuality", "co2"].map(key => (
               <MetricCard
                 key={key}
