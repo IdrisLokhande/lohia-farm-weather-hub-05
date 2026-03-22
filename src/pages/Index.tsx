@@ -367,120 +367,126 @@ const Index = () => {
   }, [activeTrend]); // Only watch the popup state
 
   return (
-    <div
-      className={`min-h-screen w-full transition-all duration-200 ease-in-out transform-gpu optimize-gpu selection:bg-emerald-500/30 overflow-x-hidden
-                     ${
-                       isDark
-                         ? "bg-[#020617] bg-[radial-gradient(circle_at_top_left,#064e3b_0%,_transparent_35%),_radial-gradient(circle_at_bottom_right,#022c22_0%,_transparent_30%)]"
-                         : "bg-[#fffaf5] bg-[radial-gradient(ellipse_at_center,transparent_40%,#ffedd5_75%,_#fed7aa_100%)]"
-                     }
-                   `}
-    >
-      <DashboardHeader
-        isDark={isDark}
-        onToggleTheme={() => setIsDark(!isDark)}
-        lang={lang}
-        onLanguageChange={setLang}
-        t={t}
+    <>
+      {/* 1. FIXED BACKGROUND LAYER 
+          This stays static while you scroll, preventing the "White Flash" 
+          caused by re-rendering complex gradients. */}
+      <div 
+        className={`fixed inset-0 -z-10 transition-colors duration-700 pointer-events-none transform-gpu ${
+          isDark 
+            ? "bg-[#020617] bg-[radial-gradient(circle_at_top_left,#064e3b_0%,_transparent_35%),_radial-gradient(circle_at_bottom_right,#022c22_0%,_transparent_30%)]" 
+            : "bg-[#fffaf5] bg-[radial-gradient(ellipse_at_center,transparent_40%,#ffedd5_75%,_#fed7aa_100%)]"
+        }`}
       />
 
-      {/* Persistent Banner: Shows when ESP32 is sleeping/charging or Internet is out */}
-      {isVisualOffline && heartbeatOffline && (
-        <div className="bg-destructive/90 backdrop-blur-md text-white py-2 px-4 text-center flex items-center justify-center gap-2 border-b border-white/10 sticky top-0 z-50 transition-all">
-          <WifiOff size={16} className="animate-pulse" />
-          <span className="font-bold uppercase tracking-widest text-[12px] md:text-[14px]">
-            {t.asleep}
-          </span>
-        </div>
-      )}
+      {/* 2. SCROLLABLE CONTENT LAYER */}
+      <div
+        className="min-h-screen w-full selection:bg-emerald-500/30 overflow-x-hidden relative"
+      >
+        <DashboardHeader
+          isDark={isDark}
+          onToggleTheme={() => setIsDark(!isDark)}
+          lang={lang}
+          onLanguageChange={setLang}
+          t={t}
+        />
 
-      {isInitialSync && <LoadingOverlay isDark={isDark} />}
+        {/* Persistent Banner */}
+        {isVisualOffline && heartbeatOffline && (
+          <div className="bg-destructive/90 backdrop-blur-md text-white py-2 px-4 text-center flex items-center justify-center gap-2 border-b border-white/10 sticky top-0 z-50 transition-all">
+            <WifiOff size={16} className="animate-pulse" />
+            <span className="font-bold uppercase tracking-widest text-[12px] md:text-[14px]">
+              {t.asleep}
+            </span>
+          </div>
+        )}
 
-      <HeroSection lang={lang} t={t} />
+        {isInitialSync && <LoadingOverlay isDark={isDark} />}
 
-      <main className="container mx-auto px-4 py-6 md:px-6 relative z-10">
-        <div className="grid gap-4 min-[850px]:grid-cols-2 min-[1300px]:grid-cols-3 grid-auto-rows-fr">
-          {["humidity", "pressure", "temperature", "lintensity", "airQuality", "co2"].map(key => (
-            <MetricCard
-              key={key}
-              data={key === "airQuality" || key === "co2" ? data[key] : data.environment[key]}
-              enableShadow={!isDark}
-              t={t}
-              onShowTrend={() => {
-                const metricData =
-                  key === "airQuality" || key === "co2" ? data[key] : data.environment[key];
-                setActiveTrend({ key, unit: metricData.unit || "" });
-              }}
-            />
-          ))}
-        </div>
+        <HeroSection lang={lang} t={t} />
 
-        {/* System Status Section */}
-        <section className="mt-12 mx-auto w-full max-w-2xl">
-          <div
-            className={`glass-card p-5 xs:p-6 md:p-10 rounded-[2rem] border relative overflow-hidden backdrop-blur-xl shadow-lg transition-all duration-700
-            ${isDark ? "bg-white/5 border-white/10" : "bg-white/85 border-black/10"}`}
-          >
+        <main className="container mx-auto px-4 py-6 md:px-6 relative z-10">
+          {/* Metric Cards Grid */}
+          <div className="grid gap-4 min-[850px]:grid-cols-2 min-[1300px]:grid-cols-3 grid-auto-rows-fr">
+            {["humidity", "pressure", "temperature", "lintensity", "airQuality", "co2"].map(key => (
+              <MetricCard
+                key={key}
+                data={key === "airQuality" || key === "co2" ? data[key] : data.environment[key]}
+                enableShadow={!isDark}
+                t={t}
+                onShowTrend={() => {
+                  const metricData = key === "airQuality" || key === "co2" ? data[key] : data.environment[key];
+                  setActiveTrend({ key, unit: metricData.unit || "" });
+                }}
+              />
+            ))}
+          </div>
+
+          {/* System Status Section */}
+          <section className="mt-12 mx-auto w-full max-w-2xl">
             <div
-              className={`absolute -top-24 -left-24 w-48 h-48 blur-[80px] rounded-full pointer-events-none transition-colors duration-700
-              ${isDark ? "bg-emerald-500/10" : "bg-blue-500/30"}`}
-            />
+              className={`glass-card p-5 xs:p-6 md:p-10 rounded-[2rem] border relative overflow-hidden backdrop-blur-xl shadow-lg transition-all duration-700 optimize-gpu
+              ${isDark ? "bg-white/5 border-white/10" : "bg-white/85 border-black/10"}`}
+            >
+              {/* Simplified Status Glow - Lower blur for better performance */}
+              <div
+                className={`absolute -top-20 -left-20 w-40 h-40 blur-[60px] rounded-full pointer-events-none transition-colors duration-700
+                ${isDark ? "bg-emerald-500/10" : "bg-blue-500/20"}`}
+              />
 
-            <div className="mb-6 xs:mb-8 flex flex-wrap items-start justify-between gap-4 relative z-10">
-              <div className="flex items-center gap-3 opacity-95">
-                <Server
-                  className={`h-5 w-5 shrink-0 ${isDark ? "text-emerald-500" : "text-blue-700"}`}
-                />
-                <h3
-                  className={`text-[13px] font-black uppercase tracking-[0.3em] leading-[1.4] -mr-[0.3em]
-                  max-[360px]:max-w-[min-content] max-[360px]:leading-[1.2]
-                  ${isDark ? "text-muted-foreground" : "text-blue-950"}`}
-                >
-                  {t.systemStatus}
-                </h3>
+              <div className="mb-6 xs:mb-8 flex flex-wrap items-start justify-between gap-4 relative z-10">
+                <div className="flex items-center gap-3 opacity-95">
+                  <Server
+                    className={`h-5 w-5 shrink-0 ${isDark ? "text-emerald-500" : "text-blue-700"}`}
+                  />
+                  <h3
+                    className={`text-[13px] font-black uppercase tracking-[0.3em] leading-[1.4] -mr-[0.3em]
+                    max-[360px]:max-w-[min-content] max-[360px]:leading-[1.2]
+                    ${isDark ? "text-muted-foreground" : "text-blue-950"}`}
+                  >
+                    {t.systemStatus}
+                  </h3>
+                </div>
+
+                {!isVisualOffline && liveData && (
+                  <div
+                    className={`text-[10px] font-bold flex items-center gap-2 px-3 xs:px-4 py-1.5 rounded-full border backdrop-blur-sm transition-all shrink-0
+                    ${
+                      isDark
+                        ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                        : "text-blue-800 bg-blue-100/60 border-blue-400/30"
+                    }`}
+                  >
+                    <span className="relative flex h-2 w-2">
+                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isDark ? "bg-emerald-400" : "bg-blue-400"}`}></span>
+                      <span className={`relative inline-flex rounded-full h-2 w-2 ${isDark ? "bg-emerald-500" : "bg-blue-700"}`}></span>
+                    </span>
+                    <span className="tracking-widest uppercase">{t.live}</span>
+                  </div>
+                )}
               </div>
 
-              {!isVisualOffline && liveData && (
-                <div
-                  className={`text-[10px] font-bold flex items-center gap-2 px-3 xs:px-4 py-1.5 rounded-full border backdrop-blur-sm transition-all shrink-0
-                  ${
-                    isDark
-                      ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
-                      : "text-blue-800 bg-blue-100/60 border-blue-400/30"
-                  }`}
-                >
-                  <span className="relative flex h-2 w-2">
-                    <span
-                      className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isDark ? "bg-emerald-400" : "bg-blue-400"}`}
-                    ></span>
-                    <span
-                      className={`relative inline-flex rounded-full h-2 w-2 ${isDark ? "bg-emerald-500" : "bg-blue-700"}`}
-                    ></span>
-                  </span>
-                  <span className="tracking-widest uppercase">{t.live}</span>
-                </div>
-              )}
+              <div className={`relative z-10 ${!isDark ? "text-blue-950 font-bold" : ""}`}>
+                <SystemStatus status={data.systemStatus} isLight={!isDark} t={t} />
+              </div>
             </div>
+          </section>
+        </main>
 
-            <div className={`space-y-2 relative z-10 ${!isDark ? "text-blue-950 font-bold" : ""}`}>
-              <SystemStatus status={data.systemStatus} isLight={!isDark} t={t} />
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <TrendPopup
-        activeMetric={activeTrend?.key ?? null}
-        onClose={() => setActiveTrend(null)}
-        metricUnit={activeTrend?.unit ?? ""}
-        history={history}
-        isDark={isDark}
-        t={t}
-        loading={historyLoading}
-      />
-      <DashboardFooter />
-    </div>
+        <TrendPopup
+          activeMetric={activeTrend?.key ?? null}
+          onClose={() => setActiveTrend(null)}
+          metricUnit={activeTrend?.unit ?? ""}
+          history={history}
+          isDark={isDark}
+          t={t}
+          loading={historyLoading}
+        />
+        <DashboardFooter />
+      </div>
+    </>
   );
+
 };
 
 export default Index;
