@@ -342,14 +342,6 @@ const Index = () => {
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDark);
-
-    requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      // A 1px scroll is more effective at "waking up" the compositor than 0,0
-      window.scrollBy(0, 1);
-      window.scrollBy(0, -1);
-    });
-    });
   }, [isDark]);
 
   useEffect(() => {

@@ -18,22 +18,23 @@ const DashboardFooter = () => {
 
   // FIX: Body Scroll Lock Logic
   useEffect(() => {
-    if (open) {
-      const scrollY = window.scrollY;
-      document.body.style.top = `-${scrollY}px`;
-      document.body.classList.add('no-scroll');
-    } else {
-      const scrollY = document.body.style.top;
-      document.body.classList.remove('no-scroll');
-      document.body.style.top = '';
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY || '0') * -1);
-      }
-    }
-    return () => {
-      document.body.classList.remove('no-scroll');
-      document.body.style.top = '';
-    };
+  if (open) {
+    // 1. Modern way to lock scroll without "jumping" to the top
+    document.body.style.overflow = 'hidden';
+    
+    // 2. (Optional) If you have a specific CSS class for modal overlays
+    document.body.classList.add('modal-open');
+  } else {
+    // 3. Simply release the lock
+    document.body.style.overflow = '';
+    document.body.classList.remove('modal-open');
+  }
+
+  // 4. Cleanup to prevent a "perma-locked" screen if the component unmounts
+  return () => {
+    document.body.style.overflow = '';
+    document.body.classList.remove('modal-open');
+  };
   }, [open]);
 
   // Define the Modal JSX

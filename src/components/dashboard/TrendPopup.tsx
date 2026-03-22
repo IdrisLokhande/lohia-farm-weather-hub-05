@@ -59,27 +59,22 @@ const TrendPopup = ({
 
   // UPDATED: Non-Destructive Scroll Lock
   useEffect(() => {
-    if (activeMetric) {
-      // 1. Lock natively without shifting body position
-      document.body.style.overflow = 'hidden';
-      document.documentElement.classList.add('is-locked');
-      setTimeRange("1h");
-    } else {
-      // 2. Use RAF to ensure the "Wake up" happens after the modal is gone
-      requestAnimationFrame(() => {
-        document.body.style.overflow = '';
-        document.documentElement.classList.remove('is-locked');
-        
-        // Force a zero-pixel scroll kick to wake up the GPU compositor
-        window.scrollBy(0, 0);
-      });
-    }
+  if (activeMetric) {
+    // 1. Lock the scroll to prevent background movement while viewing trends
+    document.body.style.overflow = 'hidden';
     
-    return () => {
-      document.body.style.overflow = '';
-      document.documentElement.classList.remove('is-locked');
-    };
-  }, [activeMetric]);
+    // 2. Standard state reset for the popup
+    setTimeRange("1h");
+  } else {
+    // 3. Simple cleanup when closing
+    document.body.style.overflow = '';
+  }
+
+  // 4. Critical: Cleanup on unmount (if user navigates away while popup is open)
+  return () => {
+    document.body.style.overflow = '';
+  };
+  }, [activeMetric]);  
 
   useEffect(() => {
     if (activeMetric && timeRange === "1h") {
