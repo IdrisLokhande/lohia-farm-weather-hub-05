@@ -398,9 +398,9 @@ const Index = () => {
 
         <HeroSection lang={lang} t={t} />
 
-        <main className="container mx-auto px-4 py-6 md:px-6 relative z-10">
+        <main className="container mx-auto px-4 py-6 transform-gpu optimize-gpu md:px-6 relative z-10">
           {/* Metric Cards Grid */}
-          <div className="grid gap-4 min-[850px]:grid-cols-2 min-[1300px]:grid-cols-3 will-change-transform transform-gpu grid-auto-rows-fr">
+          <div className="grid gap-4 min-[850px]:grid-cols-2 min-[1300px]:grid-cols-3 grid-auto-rows-fr">
             {["humidity", "pressure", "temperature", "lintensity", "airQuality", "co2"].map(key => (
               <MetricCard
                 key={key}
@@ -418,7 +418,7 @@ const Index = () => {
           {/* System Status Section */}
           <section className="mt-12 mx-auto w-full max-w-2xl">
             <div
-              className={`glass-card p-5 xs:p-6 md:p-10 rounded-[2rem] border relative overflow-hidden backdrop-blur-xl shadow-lg transition-all duration-700 optimize-gpu
+              className={`glass-card p-5 xs:p-6 md:p-10 rounded-[2rem] border relative overflow-hidden backdrop-blur-xl shadow-lg transition-all duration-700
               ${isDark ? "bg-white/5 border-white/10" : "bg-white/85 border-black/10"}`}
             >
               {/* Simplified Status Glow - Lower blur for better performance */}
