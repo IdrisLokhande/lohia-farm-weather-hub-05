@@ -4,19 +4,38 @@ import { rtdb } from "@/lib/firebase";
 import type { FarmData } from "@/lib/farmData";
 
 /**
- * Formats a Unix timestamp into a localized clock string: "06:15 AM" or "०६:१५"
+ * Formats a Unix timestamp into a localized string: "Mar 23, 06:15 AM"
  */
-const formatClockTime = (timestamp: number, lang: string) => {
-  if (!timestamp) return "---";
-  return new Intl.DateTimeFormat(
-    lang === 'en' ? 'en-US' : (lang === 'hi' ? 'hi-IN' : 'mr-IN'), 
-    {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      numberingSystem: lang === 'en' ? 'latn' : 'deva'
+const formatFullTimestamp = (timestamp: any, lang: string) => {
+  // If the timestamp is the default string, null, or 0, return placeholder
+  if (!timestamp || timestamp === "---" || timestamp === 0) return "---";
+  
+  try {
+    // Convert to Number to ensure it's not a string-wrapped unix timestamp
+    const numericTimestamp = Number(timestamp);
+    const dateValue = new Date(numericTimestamp);
+    
+    // Safety check for Invalid Date
+    if (isNaN(dateValue.getTime())) {
+      console.error("useFarmHub: Invalid timestamp received", timestamp);
+      return "---";
     }
-  ).format(new Date(timestamp));
+
+    return new Intl.DateTimeFormat(
+      lang === 'en' ? 'en-US' : (lang === 'hi' ? 'hi-IN' : 'mr-IN'), 
+      {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        numberingSystem: lang === 'en' ? 'latn' : 'deva'
+      }
+    ).format(dateValue);
+  } catch (e) {
+    console.error("useFarmHub: Formatting error", e);
+    return "---";
+  }
 };
 
 export const useFarmHub = (lang: string = 'en') => {
@@ -29,13 +48,11 @@ export const useFarmHub = (lang: string = 'en') => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Monitor the Socket
     const connectedRef = ref(rtdb, ".info/connected");
     const unsubConnect = onValue(connectedRef, (snap) => {
       setIsFirebaseConnected(snap.val() === true);
     });
 
-    // 2. Subscribe to your data node
     const weatherRef = query(ref(rtdb, 'weather'), limitToLast(1));
 
     const unsubData = onValue(weatherRef, (snapshot) => {
@@ -43,10 +60,8 @@ export const useFarmHub = (lang: string = 'en') => {
         const rawPayload = snapshot.val();
         const [hash, values] = Object.entries(rawPayload)[0] as [string, any];
 
-        // LOGIC CHANGE: 
-        // We use the timestamp for the 'Last Updated' clock.
-        // We use the 'uptime' string directly as it is stored in your DB.
-        const clockTime = values.timestamp ? formatClockTime(values.timestamp, lang) : "---";
+        // Format the clock string immediately upon data arrival
+        const clockTime = formatFullTimestamp(values.timestamp, lang);
 
         setData({
           live: { id: hash, ...values },

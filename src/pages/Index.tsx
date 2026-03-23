@@ -350,7 +350,7 @@ const data = useMemo(() => {
       uptime: systemStatus.uptime,
       sensorsOnline: systemStatus.sensorsOnline,
       totalSensors: systemStatus.totalSensors,
-      lastUpdate: isVisualOffline ? t.notConnected : systemStatus.lastUpdate,
+      lastUpdate: systemStatus.lastUpdate,
     };
   }
 
@@ -487,7 +487,7 @@ const data = useMemo(() => {
           </div>
 
           <div className={`relative z-10 ${!isDark ? "text-blue-950 font-bold" : ""}`}>
-            <SystemStatus status={data.systemStatus} isLight={!isDark} t={t} />
+            <SystemStatus status={data.systemStatus} isLight={!isDark} t={t} isVisualOffline={isVisualOffline} />
           </div>
         </div>
       </section>
