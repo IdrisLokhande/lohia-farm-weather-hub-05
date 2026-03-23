@@ -219,125 +219,142 @@ const Index = () => {
   };
 
   // 3. Memoized Data Object
-  const data = useMemo(() => {
-    const baseData = getFarmData();
-    const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
+  // 3. Memoized Data Object
+const data = useMemo(() => {
+  const baseData = getFarmData();
+  const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
 
-    const getBounds = (metricKey: string) => {
-      const firebaseKey = metricKey === "lintensity" ? "lux" : metricKey;
-      const values = history
-        .filter(h => new Date(h.timestamp).getTime() >= twentyFourHoursAgo)
-        .map(h => Number(h[firebaseKey]))
-        .filter(v => !isNaN(v) && v !== 0);
+  // Helper to determine status based on PDF requirements
+  const getThresholdStatus = (key: string, val: number) => {
+    switch (key) {
+      case "temperature":
+        if (val >= 23 && val <= 34) return { status: "good", label: "Good" };
+        if ((val >= 15 && val <= 22) || (val >= 35 && val <= 40)) return { status: "moderate", label: "Moderate" };
+        return { status: "poor", label: "Poor" };
+      
+      case "humidity":
+        if (val >= 60 && val <= 80) return { status: "good", label: "Good" };
+        if ((val >= 45 && val < 60) || (val > 80 && val <= 85)) return { status: "moderate", label: "Moderate" };
+        return { status: "poor", label: "Poor" };
 
-      return values.length === 0
-        ? { min: "--", max: "--" }
-        : { min: formatValue(Math.min(...values)), max: formatValue(Math.max(...values)) };
+      case "pressure":
+        if (val > 960) return { status: "good", label: "Good" };
+        if (val >= 880 && val <= 960) return { status: "moderate", label: "Moderate" };
+        return { status: "poor", label: "Poor" };
+
+      case "lintensity": // Lux
+        if (val >= 45000 && val <= 85000) return { status: "good", label: "Good" };
+        if ((val >= 20000 && val < 45000) || (val > 85000 && val <= 100000)) return { status: "moderate", label: "Moderate" };
+        return { status: "poor", label: "Poor" };
+
+      case "co2":
+        if (val >= 500 && val <= 900) return { status: "good", label: "Good" };
+        if (val >= 350 && val < 500) return { status: "moderate", label: "Moderate" };
+        return { status: "poor", label: "Poor" };
+
+      case "airQuality": // AQI (Indian)
+        if (val <= 100) return { status: "good", label: "Good" };
+        if (val > 100 && val <= 200) return { status: "moderate", label: "Moderate" };
+        return { status: "poor", label: "Poor" };
+
+      default:
+        return { status: "good", label: "Good" };
+    }
+  };
+
+  const getBounds = (metricKey: string) => {
+    const firebaseKey = metricKey === "lintensity" ? "lux" : metricKey;
+    const values = history
+      .filter(h => new Date(h.timestamp).getTime() >= twentyFourHoursAgo)
+      .map(h => Number(h[firebaseKey]))
+      .filter(v => !isNaN(v) && v !== 0);
+
+    return values.length === 0
+      ? { min: "--", max: "--" }
+      : { min: formatValue(Math.min(...values)), max: formatValue(Math.max(...values)) };
+  };
+
+  // Static Mappings
+  baseData.co2.label = t.co2;
+  baseData.airQuality.label = t.aqi;
+  baseData.environment.temperature.label = t.temp;
+  baseData.environment.humidity.label = t.humidity;
+  baseData.environment.pressure.label = t.pressure;
+  baseData.environment.lintensity.label = t.lintensity;
+
+  if (liveData) {
+    const metrics = [
+      { key: "temperature", target: baseData.environment.temperature, val: liveData.temperature },
+      { key: "humidity", target: baseData.environment.humidity, val: liveData.humidity },
+      { key: "pressure", target: baseData.environment.pressure, val: liveData.pressure },
+      { key: "lintensity", target: baseData.environment.lintensity, val: liveData.lux },
+      { key: "co2", target: baseData.co2, val: liveData.co2 },
+    ];
+
+    metrics.forEach(m => {
+      const bounds = getBounds(m.key);
+      const valNum = Number(m.val || 0);
+      const threshold = getThresholdStatus(m.key, valNum);
+
+      m.target.value = formatValue(valNum);
+      m.target.min = bounds.min;
+      m.target.max = bounds.max;
+      m.target.status = threshold.status;
+      m.target.statusLabel = threshold.label;
+    });
+
+    // Handle AQI Threshold separately as it is calculated
+    const a1 = Number(liveData.pm1 || 0), a25 = Number(liveData.pm25 || 0), a10 = Number(liveData.pm10 || 0);
+    const finalAQI = WeatherPhysics.calculateIndiaAQI(a25, a10);
+    const aqiThreshold = getThresholdStatus("airQuality", finalAQI);
+
+    const aqiHistory = history.map(point =>
+      WeatherPhysics.calculateIndiaAQI(Number(point.pm25 || 0), Number(point.pm10 || 0))
+    );
+
+    baseData.airQuality = {
+      ...baseData.airQuality,
+      value: formatValue(finalAQI, true),
+      unit: "AQI",
+      min: formatValue(Math.min(...aqiHistory, finalAQI), true),
+      max: formatValue(Math.max(...aqiHistory, finalAQI), true),
+      status: aqiThreshold.status,
+      statusLabel: aqiThreshold.label,
+      pmBreakdown: [
+        { l: "PM1.0", v: formatValue(a1) },
+        { l: "PM2.5", v: formatValue(a25) },
+        { l: "PM10.0", v: formatValue(a10) },
+      ],
     };
 
-    // Static Mappings
-    baseData.co2.label = t.co2;
-    baseData.airQuality.label = t.aqi;
-    baseData.environment.temperature.label = t.temp;
-    baseData.environment.humidity.label = t.humidity;
-    baseData.environment.pressure.label = t.pressure;
-    baseData.environment.lintensity.label = t.lintensity;
+    // Physics Descriptions
+    const curTemp = Number(liveData.temperature || 0);
+    const curHum = Number(liveData.humidity || 0);
+    const feelsLikeTemp = WeatherPhysics.getFeelsLike(curTemp, curHum);
+    const vaporPressure = WeatherPhysics.getVaporPressure(curTemp, Number(liveData.pressure || 0));
+    const absoluteHumidity = WeatherPhysics.getAbsoluteHumidity(curTemp, curHum);
 
-    // Use liveData if available (SWR will provide stale data if offline)
-    if (liveData) {
-      const metrics = [
-        { key: "temperature", target: baseData.environment.temperature, val: liveData.temperature },
-        { key: "humidity", target: baseData.environment.humidity, val: liveData.humidity },
-        { key: "pressure", target: baseData.environment.pressure, val: liveData.pressure },
-        { key: "lintensity", target: baseData.environment.lintensity, val: liveData.lux },
-        { key: "co2", target: baseData.co2, val: liveData.co2 },
-      ];
+    if (!isNaN(feelsLikeTemp)) baseData.environment.temperature.description = `${t.feelsLike} ${feelsLikeTemp.toFixed(1)} °C`;
+    if (!isNaN(vaporPressure)) baseData.environment.pressure.description = `${t.vaporPressure} ${vaporPressure.toFixed(1)} hPa`;
+    if (!isNaN(absoluteHumidity)) baseData.environment.humidity.description = `${t.absoluteHumidity} ${absoluteHumidity.toFixed(1)} g/m³`;
+    
+    baseData.environment.lintensity.description = `${t.lintensityDesc}`;
+    baseData.co2.description = `${t.co2Desc}`;
+    const maxPM = Math.max(a1, a25, a10);
+    const majorPollutant = maxPM == a1 ? t.pm1 : maxPM == a25 ? t.pm25 : maxPM == a10 ? t.pm10 : t.none;
+    baseData.airQuality.description = `${t.majorPollutant} ${majorPollutant}`;
+  }
 
-      metrics.forEach(m => {
-        const bounds = getBounds(m.key);
-        m.target.value = formatValue(Number(m.val || 0));
-        m.target.min = bounds.min;
-        m.target.max = bounds.max;
-      });
+  if (systemStatus) {
+    baseData.systemStatus = {
+      uptime: systemStatus.uptime,
+      sensorsOnline: systemStatus.sensorsOnline,
+      totalSensors: systemStatus.totalSensors,
+      lastUpdate: isVisualOffline ? t.notConnected : systemStatus.lastUpdate,
+    };
+  }
 
-      // Recalculate Physics (stale data still allows feels-like calc)
-      const curTemp = Number(liveData.temperature || 0);
-      const curHum = Number(liveData.humidity || 0);
-      const curPre = Number(liveData.pressure || 0);
-      const curLux = Number(liveData.lux || 0);
-      const a1 = Number(liveData.pm1 || 0),
-        a25 = Number(liveData.pm25 || 0),
-        a10 = Number(liveData.pm10 || 0);
-      const max = Math.max(a1, a25, a10);
-      const majorPollutant = max == a1 ? t.pm1 : max == a25 ? t.pm25 : max == a10 ? t.pm10 : t.none;
-      const finalAQI = WeatherPhysics.calculateIndiaAQI(a25, a10);
-      const curCO2 = Number(liveData.co2 || 0); 
-      const feelsLikeTemp = WeatherPhysics.getFeelsLike(curTemp, curHum);
-      const vaporPressure = WeatherPhysics.getVaporPressure(curTemp, curHum);
-      const absoluteHumidity = WeatherPhysics.getAbsoluteHumidity(curTemp, curHum);
-
-      if (!isNaN(feelsLikeTemp)) {
-        baseData.environment.temperature.description = `${t.feelsLike} ${feelsLikeTemp.toFixed(1)} °C`;
-      }
-      if (!isNaN(vaporPressure)) {
-        baseData.environment.pressure.description = `${t.vaporPressure} ${vaporPressure.toFixed(1)} hPa`;
-      } 
-      if (!isNaN(absoluteHumidity)) {
-        baseData.environment.humidity.description = `${t.absoluteHumidity} ${absoluteHumidity.toFixed(1)} g/m³`;
-      } 
-      baseData.environment.lintensity.description = `${t.lintensityDesc}`;
-      baseData.co2.description = `${t.co2Desc}`;
-      baseData.airQuality.description = `${t.majorPollutant} ${majorPollutant}`; 
-
-      // AQI
-      // We map every point in history to its calculated India AQI value
-      const aqiHistory = history.map(point =>
-        WeatherPhysics.calculateIndiaAQI(Number(point.pm25 || 0), Number(point.pm10 || 0))
-      );
-
-      // Calculate Min/Max from the new AQI array
-      const minAQI = Math.min(...aqiHistory, finalAQI);
-      const maxAQI = Math.max(...aqiHistory, finalAQI);
-
-      /*
-      baseData.airQuality.value = (
-        <div className="inline-flex items-baseline gap-3 xs:gap-4 lg:gap-6">
-          {[ {v: a1, l: "PM1.0"}, {v: a25, l: "PM2.5"}, {v: a10, l: "PM10.0"} ].map(pm => (
-            <div key={pm.l} className="flex flex-col">
-              <span className="text-2xl min-[790px]:text-3xl font-black leading-none">{formatValue(pm.v)}</span>
-              <span className="mt-1 text-[8px] sm:text-[10px] font-black uppercase tracking-widest opacity-50">{pm.l}</span>
-            </div>
-          ))}
-        </div>
-      );
-      */
-
-      baseData.airQuality = {
-        ...baseData.airQuality,
-        value: formatValue(finalAQI, true),
-        unit: "AQI",
-        min: formatValue(minAQI, true),
-        max: formatValue(maxAQI, true),
-        // 2. THIS IS THE KEY: The component looks for this specific property
-        pmBreakdown: [
-          { l: "PM1.0", v: formatValue(a1) },
-          { l: "PM2.5", v: formatValue(a25) },
-          { l: "PM10.0", v: formatValue(a10) },
-        ],
-      };
-    }
-
-    if (systemStatus) {
-      // Explicitly assigning properties for robustness instead of spreading.
-      baseData.systemStatus = {
-        uptime: systemStatus.uptime,
-        sensorsOnline: systemStatus.sensorsOnline,
-        totalSensors: systemStatus.totalSensors,
-        lastUpdate: isVisualOffline ? t.notConnected : systemStatus.lastUpdate,
-      };
-    }
-
-    return baseData;
+  return baseData;
   }, [liveData, history, systemStatus, lang, t, isVisualOffline]);
 
   useEffect(() => {
@@ -418,7 +435,7 @@ const Index = () => {
     <main className="container mx-auto px-4 py-6 md:px-6 relative z-10">
       
       {/* Metric Cards Grid */}
-      <div className="grid gap-4 min-[850px]:grid-cols-2 min-[1300px]:grid-cols-3 grid-auto-rows-fr">
+      <div className="grid gap-4 min-[910px]:grid-cols-2 min-[1300px]:grid-cols-3 grid-auto-rows-fr">
         {["humidity", "pressure", "temperature", "lintensity", "airQuality", "co2"].map((key) => (
           <div key={key} className="card-grid-item">
             <MetricCard
