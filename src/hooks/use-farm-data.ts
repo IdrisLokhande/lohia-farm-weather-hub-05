@@ -3,23 +3,14 @@ import { ref, onValue, query, limitToLast } from "firebase/database";
 import { rtdb } from "@/lib/firebase"; 
 import type { FarmData } from "@/lib/farmData";
 
-/**
- * Formats a Unix timestamp into a localized string: "Mar 23, 06:15 AM"
- */
 const formatFullTimestamp = (timestamp: any, lang: string) => {
-  // If the timestamp is the default string, null, or 0, return placeholder
   if (!timestamp || timestamp === "---" || timestamp === 0) return "---";
   
   try {
-    // Convert to Number to ensure it's not a string-wrapped unix timestamp
     const numericTimestamp = Number(timestamp);
     const dateValue = new Date(numericTimestamp);
     
-    // Safety check for Invalid Date
-    if (isNaN(dateValue.getTime())) {
-      console.error("useFarmHub: Invalid timestamp received", timestamp);
-      return "---";
-    }
+    if (isNaN(dateValue.getTime())) return "---";
 
     return new Intl.DateTimeFormat(
       lang === 'en' ? 'en-US' : (lang === 'hi' ? 'hi-IN' : 'mr-IN'), 
@@ -33,7 +24,6 @@ const formatFullTimestamp = (timestamp: any, lang: string) => {
       }
     ).format(dateValue);
   } catch (e) {
-    console.error("useFarmHub: Formatting error", e);
     return "---";
   }
 };
@@ -59,10 +49,9 @@ export const useFarmHub = (lang: string = 'en') => {
       if (snapshot.exists()) {
         const rawPayload = snapshot.val();
         const [hash, values] = Object.entries(rawPayload)[0] as [string, any];
-
-        // Format the clock string immediately upon data arrival
         const clockTime = formatFullTimestamp(values.timestamp, lang);
 
+        // Atomic update of the state
         setData({
           live: { id: hash, ...values },
           system: {
@@ -72,10 +61,10 @@ export const useFarmHub = (lang: string = 'en') => {
             totalSensors: values.totalSensors || "-"
           }
         });
+        setLoading(false); // Only stop when state is set
       }
-      setLoading(false);
     }, (err) => {
-      setLoading(false);
+      setLoading(false); 
     });
 
     return () => {
@@ -88,6 +77,6 @@ export const useFarmHub = (lang: string = 'en') => {
     liveData: data.live,
     systemStatus: data.system,
     isOffline: !isFirebaseConnected,
-    loading: loading && !data.live
+    loading: loading
   };
 };

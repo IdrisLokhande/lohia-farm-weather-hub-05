@@ -44,7 +44,7 @@ const SystemStatus = ({ status, isLight, t, isVisualOffline }: SystemStatusProps
           <Clock className="h-4 w-4" />
           <span className="font-medium whitespace-nowrap">{t.lupdate}</span>
         </div>
-        <div className={`flex justify-end text-lg font-semibold text-right transition-colors duration-500 border-t ${isLight ? "border-black/20" : "border-white/10"} pt-3 ${lastUpdateColor} min-w-0 overflow-hidden`}>
+        <div className={`flex justify-end text-lg font-semibold text-right border-t ${isLight ? "border-black/20" : "border-white/10"} pt-3 ${lastUpdateColor} min-w-0 overflow-hidden`}>
           {/* Show date-only on mobile, full string only when there's enough room (>= 500px) */}
           <span className="inline min-[500px]:hidden truncate">
             {status.lastUpdate?.split(',')[0]}
@@ -60,7 +60,7 @@ const SystemStatus = ({ status, isLight, t, isVisualOffline }: SystemStatusProps
           <span className="font-medium whitespace-nowrap">{t.uptime}</span>
         </div>
         <div className={`flex justify-end border-t ${isLight ? "border-black/20" : "border-white/10"} pt-3 min-w-0 overflow-hidden`}>
-          <span className={`text-lg font-semibold text-right whitespace-nowrap transition-colors duration-500 truncate ${uptimeColor}`}>
+          <span className={`text-lg font-semibold text-right whitespace-nowrap truncate ${uptimeColor}`}>
             {status.uptime}
           </span>
         </div>
