@@ -1,5 +1,5 @@
 import { Moon, Sun } from "lucide-react";
-import geoSenseLogo from "@/assets/geoSense.png";
+import geoSenseLogo from "@/assets/geosenseLogo.png";
 import DataDownloader from "./DataDownloader";
 
 interface DashboardHeaderProps {
