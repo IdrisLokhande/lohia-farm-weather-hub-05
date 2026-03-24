@@ -18,7 +18,7 @@ const DashboardHeader = ({
   t,
 }: DashboardHeaderProps) => {
   return (
-    <header className="sticky top-0 z-50 glass-card border-b">
+    <header className="sticky top-0 z-[51] glass-card border-b">
       <div className="container mx-auto flex items-center justify-between px-4 py-3 md:px-6">
         {/* Left Side: Logo & Title */}
         <div className="flex items-center gap-3 min-w-0 flex-1">
