@@ -2,22 +2,69 @@ import { useState, useEffect } from "react";
 import { Linkedin, ChevronDown, X } from "lucide-react";
 
 const team = [
-  { name: "Abdullah", role: "Hardware Systems and Power Optimization Engineer", link: "https://www.linkedin.com/in/abdullah-ansari-691aa7333" },
-  { name: "Hussain", role: "Electronics and Robotics Engineer", link: "https://www.linkedin.com/in/hussain-attar-2a362a305" },
-  { name: "Mueez", role: "Data Analyst", link: "https://www.linkedin.com/in/mueez-hajwani-8a80562b6" },
-  { name: "Irfan", role: "Machine Learning Engineer", link: "https://www.linkedin.com/in/irfan-ali-shaikh-8130262b7" },
-  { name: "Idris", role: "IoT and Backend Developer", link: "https://www.linkedin.com/in/idrislokhande" },
-  { name: "Zaid", role: "UI/UX Designer", link: "https://www.linkedin.com/in/zaid-ashfak-pansare" },
-  { name: "Danish", role: "Data Processing Engineer", link: "https://www.linkedin.com/in/danish-khan-9a5791348" },
-  { name: "Rehan", role: "Frontend Developer", link: "https://www.linkedin.com/in/rehan-shaikh-4aa937379" }
+  { 
+    name: "Abdullah", 
+    role: "Hardware Systems and Power Optimization Engineer", 
+    link: "https://www.linkedin.com/in/abdullah-ansari-691aa7333",
+    // CONFIG: pos moves the image, scale zooms it.
+    offset: { scale: "scale-[1.6]", pos: "translate-y-[4px] translate-x-0" } 
+  },
+  { 
+    name: "Hussain", 
+    role: "Electronics and Robotics Engineer", 
+    link: "https://www.linkedin.com/in/hussain-attar-2a362a305",
+    offset: { scale: "scale-[2.0]", pos: "translate-y-[13px] translate-x-0" } 
+  },
+  { 
+    name: "Mueez", 
+    role: "Data Analyst", 
+    link: "https://www.linkedin.com/in/mueez-hajwani-8a80562b6",
+    offset: { scale: "scale-[2.0]", pos: "translate-y-[34px] translate-x-0" } 
+  },
+  { 
+    name: "Irfan", 
+    role: "Machine Learning Engineer", 
+    link: "https://www.linkedin.com/in/irfan-ali-shaikh-8130262b7",
+    offset: { scale: "scale-[1.4]", pos: "translate-y-[10px] translate-x-0" } 
+  },
+  { 
+    name: "Idris", 
+    role: "IoT and Backend Developer", 
+    link: "https://www.linkedin.com/in/idrislokhande",
+    // If head is cut at top, use positive translate-y (e.g. [5px]) to pull it down
+    offset: { scale: "scale-[1.6]", pos: "translate-y-[19px] translate-x-0" } 
+  },
+  { 
+    name: "Zaid", 
+    role: "UI/UX Designer", 
+    link: "https://www.linkedin.com/in/zaid-ashfak-pansare",
+    offset: { scale: "scale-[1.0]", pos: "translate-y-0 translate-x-0" } 
+  },
+  { 
+    name: "Danish", 
+    role: "Data Processing Engineer", 
+    link: "https://www.linkedin.com/in/danish-khan-9a5791348",
+    offset: { scale: "scale-[1.6]", pos: "translate-y-[16px] translate-x-0" } 
+  },
+  { 
+    name: "Rehan", 
+    role: "Frontend Developer", 
+    link: "https://www.linkedin.com/in/rehan-shaikh-4aa937379",
+    offset: { scale: "scale-[1.6]", pos: "translate-y-[19px] translate-x-0" } 
+  }
 ];
 
 const DashboardFooter = () => {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (open) document.body.style.overflow = 'hidden';
-    else document.body.style.overflow = 'unset';
+    if (open) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = 'var(--scrollbar-gutter, 0px)';
+    } else {
+      document.body.style.overflow = 'unset';
+      document.body.style.paddingRight = '0px';
+    }
   }, [open]);
 
   return (
@@ -27,16 +74,13 @@ const DashboardFooter = () => {
         className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-base md:text-lg font-black tracking-[0.2em] text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all active:scale-95 border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]"
       >
         ABOUT US
-        <ChevronDown
-          size={18}
-          className={`transition-transform duration-300 ${open ? "rotate-180" : ""}`}
-        />
+        <ChevronDown size={18} className={`transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 md:p-6 isolate">
           <div 
-            className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-500" 
+            className="fixed inset-0 bg-slate-950/95 backdrop-blur-2xl animate-in fade-in duration-500" 
             onClick={() => setOpen(false)} 
           />
           
@@ -65,49 +109,44 @@ const DashboardFooter = () => {
                 {team.map((member, i) => (
                   <div
                     key={i}
-                    className="group relative bg-white/[0.02] border border-white/5 rounded-2xl p-6 transition-all duration-300 flex flex-col items-center text-center h-full cursor-default"
+                    className="group relative bg-white/[0.02] border border-white/5 rounded-2xl p-6 transition-all duration-300 flex flex-col items-center text-center h-full cursor-default overflow-hidden"
                   >
-                    {/* The Clickable Profile Part */}
                     <a 
                       href={member.link} 
                       target="_blank" 
                       rel="noopener noreferrer" 
-                      className="flex flex-col items-center group/link cursor-pointer"
+                      className="flex flex-col items-center group/link cursor-pointer w-full"
                     >
-                      {/* Avatar with Ring Reaction */}
-                      <div className="relative mb-5 transition-transform duration-300 group-hover/link:scale-105">
-                        <div className="relative mb-5 transition-transform duration-300 group-hover/link:scale-105">
-
-  <div className="w-14 h-14 rounded-full overflow-hidden ring-2 ring-white/10 group-hover/link:ring-emerald-500 transition-all duration-300 shadow-xl">
-
-    <img
-      src={`/team/${member.name}.png`}
-      alt={member.name}
-      className="w-full h-full object-cover"
-    />
-
-  </div>
-</div>
-                        <div className="absolute -bottom-1 -right-1 bg-slate-950 rounded-full p-1.5 border border-white/10 group-hover/link:border-emerald-500 group-hover/link:scale-110 transition-all">
-                          <Linkedin size={12} className="text-emerald-400 group-hover/link:text-emerald-300" />
+                      <div className="relative mb-5 transition-transform duration-500 group-hover/link:scale-110">
+                        {/* 1. THE CIRCLE CONTAINER */}
+                        <div className="w-20 h-20 rounded-full overflow-hidden ring-2 ring-white/10 group-hover/link:ring-emerald-500 transition-all duration-500 shadow-2xl bg-slate-900 relative">
+                          
+                          {/* 2. THE IMAGE - Changed to object-contain to prevent default cutting */}
+                          <img
+                            src={`/team/${member.name}.png`}
+                            alt={member.name}
+                            className={`absolute inset-0 w-full h-full object-contain
+                                    
+                                      ${member.offset.scale} ${member.offset.pos}`} 
+                          />
+                        </div>
+                        <div className="absolute -bottom-1 -right-1 bg-emerald-500 rounded-full p-1.5 shadow-lg group-hover/link:scale-110 transition-all z-10">
+                          <Linkedin size={10} className="text-white" />
                         </div>
                       </div>
 
-                      {/* Name - Now perfectly aligned */}
                       <p className="text-white text-[13px] md:text-sm font-black uppercase tracking-wider mb-2 group-hover/link:text-emerald-400 transition-colors">
                         {member.name}
                       </p>
                     </a>
 
-                    {/* Role - Remains outside the link or non-pointer if preferred, but usually roles are informative only */}
                     <div className="h-10 flex items-start justify-center flex-shrink-0">
                       <p className="text-[10px] text-slate-500 font-bold leading-tight uppercase line-clamp-2">
                         {member.role}
                       </p>
                     </div>
 
-                    {/* Uniform Outline that only shows when the profile is hovered */}
-                    <div className="absolute inset-0 rounded-2xl border border-emerald-500/0 group-hover:border-emerald-500/30 group-hover:ring-1 group-hover:ring-emerald-500/30 transition-all pointer-events-none" />
+                    <div className="absolute inset-0 rounded-2xl border border-emerald-500/0 group-hover:border-emerald-500/20 transition-all pointer-events-none" />
                   </div>
                 ))}
               </div>
