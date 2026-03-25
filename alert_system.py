@@ -12,14 +12,14 @@ apobj = apprise.Apprise()
 # Add Email (Using standard SMTP - replace with your details)
 # To send to multiple receivers, append them at the end separated by slashes:
 # mailto://userid:app_password@gmail.com/receiver1@example.com/receiver2@example.com
-apobj.add('mailto://danish24co41:tpxksaiiefihnenp@gmail.com')
+apobj.add('mailto://geosense552:mthoctfajzlaqfua@gmail.com/danish24co41@gmail.com?name=Geosense')
 
 # Send a startup test email AFTER adding the service
-# print("🔄 Sending startup test email...")
-# apobj.notify(
-#     title="Lohia Farm - System Online",
-#     body="Your alert system script has started successfully and is listening for data. ✅"
-# )
+print("🔄 Sending startup test email...")
+apobj.notify(
+    title="Lohia Farm - System Online",
+    body="Your alert system script has started successfully and is listening for data. ✅"
+)
 
 # 2. Initialize Firebase
 cred = credentials.Certificate('firebase_credentials.json')
@@ -33,7 +33,7 @@ last_alert_time = 0
 COOLDOWN_SECONDS = 3600 # Wait 1 hour (3600 seconds) between alerts
 
 # --- ALERT THRESHOLDS ---
-TEMP_THRESHOLD = 36 # Send email ONLY if temp goes above 35
+TEMP_THRESHOLD = 40# Send email ONLY if temp goes above 40
 CO2_THRESHOLD = 1200  # Send email ONLY if CO2 goes above 1000
 HUMIDITY_THRESHOLD = 80 # Send email if humidity goes above 85%
 AQI_THRESHOLD = 150# Send email if AQI crosses into "Poor" territory
