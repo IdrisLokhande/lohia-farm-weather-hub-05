@@ -47,3 +47,8 @@ node_modules/.vite
 .directory
 .Trash-999/
 thumbs.db
+
+# Secrets and Credentials
+firebase_credentials.json
+.env
+__pycache__/
