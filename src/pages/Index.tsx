@@ -215,8 +215,8 @@ const translations = {
     if (liveData?.timestamp) {
       const lastUpdateTs = new Date(liveData.timestamp).getTime();
       const secondsSinceUpdate = (Date.now() - lastUpdateTs) / 1000;
-      // 310s threshold (5.17 mins)
-      heartbeatOffline = secondsSinceUpdate > 310;
+      // 320s threshold (5.33 mins)
+      heartbeatOffline = secondsSinceUpdate > 320;
     }
 
     const finalVisualOffline = isOffline || heartbeatOffline;
