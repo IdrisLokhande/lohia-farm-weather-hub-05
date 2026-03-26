@@ -16,12 +16,19 @@ apobj.add('mailto://geosense552:mthoctfajzlaqfua@gmail.com/danish24co41@gmail.co
 
 # Send a startup test email AFTER adding the service
 print("🔄 Sending startup test email...")
+<<<<<<< HEAD
 startup_success = apobj.notify(
     title="Lohia Farm - System Online",
     body="Your alert system script has started successfully and is listening for data. ✅"
 )
 if not startup_success:
     print("❌ CRITICAL ERROR: Startup email failed! Your remote server is likely blocking outbound SMTP ports, or Google rejected the login from this IP.")
+=======
+apobj.notify(
+    title="Lohia Farm - System Online",
+    body="Your alert system script has started successfully and is listening for data. ✅"
+)
+>>>>>>> b7c200a5f24b9d192ac0d9188e312c770854a7dd
 
 # 2. Initialize Firebase
 cred = credentials.Certificate('firebase_credentials.json')
@@ -35,10 +42,17 @@ last_alert_time = 0
 COOLDOWN_SECONDS = 3600 # Wait 1 hour (3600 seconds) between alerts
 
 # --- ALERT THRESHOLDS ---
+<<<<<<< HEAD
 TEMP_THRESHOLD = 40   # Send email ONLY if temp goes above 40°C
 CO2_THRESHOLD = 1200  # Send email ONLY if CO2 goes above 1200 ppm
 HUMIDITY_THRESHOLD = 80 # Send email ONLY if humidity goes above 80%
 AQI_THRESHOLD = 150   # Send email ONLY if AQI crosses into "Poor" territory (150+)
+=======
+TEMP_THRESHOLD = 40# Send email ONLY if temp goes above 40
+CO2_THRESHOLD = 1200  # Send email ONLY if CO2 goes above 1000
+HUMIDITY_THRESHOLD = 80 # Send email if humidity goes above 85%
+AQI_THRESHOLD = 150# Send email if AQI crosses into "Poor" territory
+>>>>>>> b7c200a5f24b9d192ac0d9188e312c770854a7dd
 
 def calculate_india_aqi(pm25, pm10):
     """Calculates the Indian AQI dynamically based on PM2.5 and PM10"""
