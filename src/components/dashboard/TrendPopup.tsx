@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, memo } from "react";
+import React, { useState, useEffect, useCallback, memo, useRef } from "react";
 import { createPortal } from "react-dom";
-import { X, TrendingUp, Clock } from "lucide-react";
+import { X, TrendingUp } from "lucide-react";
 import TrendChart from "./TrendChart";
 import { WeatherPhysics } from "@/lib/weather-physics";
 import { rtdb } from "@/lib/firebase";
@@ -28,36 +28,36 @@ const TrendPopup = ({
   const [timeRange, setTimeRange] = useState("1h");
   const [chartData, setChartData] = useState<any[]>([]);
   const [isFetchingRange, setIsFetchingRange] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const getChartMinWidth = (range: string) => {
+    switch (range) {
+      case "24h": return "1600px"; 
+      case "7d": return "3800px";  
+      case "30d": return "8000px"; 
+      default: return "100%";      
+    }
+  };
+
+  useEffect(() => {
+    if (scrollContainerRef.current && !isFetchingRange && chartData.length > 0) {
+      const container = scrollContainerRef.current;
+      container.scrollTo({ left: container.scrollWidth, behavior: 'instant' });
+    }
+  }, [chartData, isFetchingRange]);
 
   const processRawData = useCallback((rawData: any[], metric: string) => {
     if (!rawData || rawData.length === 0 || !metric) return [];
     return rawData.map(point => {
       if (point.isGapMarker) return point;
-
       let val = 0;
       if (metric === "airQuality") {
         val = WeatherPhysics.calculateIndiaAQI(Number(point.pm25 || 0), Number(point.pm10 || 0));
       } else {
-        let firebaseKey = metric;
-        if (metric === "lintensity") firebaseKey = "lux";
+        let firebaseKey = metric === "lintensity" ? "lux" : metric;
         val = Number(point[firebaseKey] || 0);
       }
-
-      return {
-        id: point.id,
-        timestamp: point.timestamp,
-        displayTime: new Date(point.timestamp).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        fullTime: new Date(point.timestamp).toLocaleString([], {
-          month: 'short',
-          day: 'numeric',
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        value: val,
-      };
+      return { id: point.id, timestamp: point.timestamp, value: val };
     });
   }, []);
 
@@ -84,174 +84,112 @@ const TrendPopup = ({
     if (newRange === timeRange) return;
     setTimeRange(newRange);
     const now = Date.now();
-
     if (newRange === "1h") {
       const oneHourAgo = now - 3600000;
       const filtered = history.filter(p => Number(p.timestamp) >= oneHourAgo);
       setChartData(processRawData(filtered, activeMetric!));
       return;
     }
-
     setIsFetchingRange(true);
     try {
-      let startTime = 0;
-      let samplingInterval = 60000;
-
-      switch (newRange) {
-        case "24h": startTime = now - 24 * 60 * 60 * 1000; samplingInterval = 5 * 60 * 1000; break;
-        case "7d": startTime = now - 7 * 24 * 60 * 60 * 1000; samplingInterval = 30 * 60 * 1000; break;
-        case "30d": startTime = now - 30 * 24 * 60 * 60 * 1000; samplingInterval = 2 * 60 * 60 * 1000; break;
-      }
+      let startTime = now - (newRange === "24h" ? 86400000 : newRange === "7d" ? 604800000 : 2592000000);
+      
+      // IMPROVED: Higher density sampling for 7d and 30d
+      let samplingInterval = newRange === "24h" ? 300000 : 
+                             newRange === "7d" ? 900000 : // 15 mins
+                             3600000; // 1 hour (much better than 4)
 
       const weatherRef = ref(rtdb, "weather");
       const dbQuery = query(weatherRef, orderByChild("timestamp"), startAt(Number(startTime)));
       const snapshot = await get(dbQuery);
-
       if (!snapshot.exists()) { setChartData([]); return; }
-
       const rawData: any[] = [];
       snapshot.forEach(child => {
         const val = child.val();
         const ts = Number(val.timestamp);
-        if (ts >= startTime && ts <= now) {
-          rawData.push({ ...val, id: child.key, timestamp: ts });
-        }
+        if (ts >= startTime && ts <= now) rawData.push({ ...val, id: child.key, timestamp: ts });
       });
-
       rawData.sort((a, b) => a.timestamp - b.timestamp);
-
-      let lastStoredTimestamp = 0;
-      const sampledData = rawData.filter(point => {
-        if (point.timestamp - lastStoredTimestamp >= samplingInterval) {
-          lastStoredTimestamp = point.timestamp;
-          return true;
-        }
+      let lastTs = 0;
+      const sampled = rawData.filter(p => {
+        if (p.timestamp - lastTs >= samplingInterval) { lastTs = p.timestamp; return true; }
         return false;
       });
-
-      if (rawData.length > 0 && (!sampledData.length || sampledData[sampledData.length - 1]?.id !== rawData[rawData.length - 1]?.id)) {
-        sampledData.push(rawData[rawData.length - 1]);
-      }
-
-      // RED ZONE LOGIC: Detect gaps and inject null markers with gap metadata
-      const finalDataWithGaps: any[] = [];
-      const gapThreshold = samplingInterval * 2.5;
-
-      for (let i = 0; i < sampledData.length; i++) {
-        finalDataWithGaps.push(sampledData[i]);
-
-        if (i < sampledData.length - 1) {
-          const currentTs = sampledData[i].timestamp;
-          const nextTs = sampledData[i + 1].timestamp;
-
-          if (nextTs - currentTs > gapThreshold) {
-            finalDataWithGaps.push({
-              timestamp: currentTs + (nextTs - currentTs) / 2,
-              value: null,
-              isGapMarker: true,
-              gapStart: currentTs,
-              gapEnd: nextTs,
-              id: `gap-${currentTs}`
-            });
-          }
+      const final: any[] = [];
+      // RELAXED: gapThreshold is now 3.5x interval to avoid stuttering lines
+      const gapThreshold = samplingInterval * 3.5;
+      for (let i = 0; i < sampled.length; i++) {
+        final.push(sampled[i]);
+        if (i < sampled.length - 1 && (sampled[i+1].timestamp - sampled[i].timestamp) > gapThreshold) {
+          final.push({ timestamp: sampled[i].timestamp + (sampled[i+1].timestamp - sampled[i].timestamp) / 2, value: null, isGapMarker: true, gapStart: sampled[i].timestamp, gapEnd: sampled[i+1].timestamp, id: `gap-${sampled[i].timestamp}` });
         }
       }
-
-      setChartData(processRawData(finalDataWithGaps, activeMetric!));
-    } catch (error) {
-      console.error("Firebase fetch error:", error);
-      setChartData([]);
-    } finally {
-      setIsFetchingRange(false);
-    }
+      setChartData(processRawData(final, activeMetric!));
+    } catch (e) { setChartData([]); } finally { setIsFetchingRange(false); }
   };
 
   if (!activeMetric) return null;
-  let displayTitle = t[activeMetric] || t.temp;
-  if (activeMetric === "airQuality") displayTitle = t.aqi;
+  const displayTitle = activeMetric === "airQuality" ? t.aqi : (t[activeMetric] || t.temp);
 
   const modalContent = (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-6 isolate overflow-hidden">
-      <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-500" onClick={onClose} />
-      <div className={`relative w-full max-w-4xl max-h-[90dvh] flex flex-col overflow-hidden rounded-[2.5rem] border shadow-2xl transition-all animate-in zoom-in-95 duration-300 ${isDark ? "bg-slate-900/95 border-white/10 ring-1 ring-white/5" : "bg-white/90 border-black/10 ring-1 ring-inset ring-black/5"}`} onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-8 isolate overflow-hidden">
+      <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={onClose} />
+      
+      <style>{`
+        @media (max-height: 545px) {
+          .trend-card-scrollable {
+            overflow-y: auto !important;
+            display: block !important;
+          }
+          .trend-card-scrollable > div { margin-bottom: 0.5rem; }
+        }
+        .trend-card-scrollable::-webkit-scrollbar { display: none; }
+        .trend-card-scrollable { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
+
+      <div className={`trend-card-scrollable relative w-full max-w-4xl h-fit max-h-[90vh] flex flex-col rounded-[2.5rem] border shadow-2xl overflow-y-auto overflow-x-hidden scrollbar-none ${isDark ? "bg-slate-900/95 border-white/10" : "bg-white/95 border-black/10"}`} onClick={(e) => e.stopPropagation()}>
         
-        {/* HEADER */}
-        <div className={`sticky top-0 z-20 p-6 md:p-10 pb-4 backdrop-blur-md ${isDark ? "bg-slate-900/50" : "bg-white/50"}`}>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-col md:flex-row items-center gap-4 text-center md:text-left">
-              <div className={`p-3 rounded-2xl ${isDark ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-600/10 text-emerald-700"}`}>
-                <TrendingUp size={28} />
-              </div>
-              <div>
-                <h2 className={`text-xl md:text-3xl font-black uppercase tracking-[0.2em] ${isDark ? "text-white" : "text-emerald-950"}`}>{displayTitle}</h2>
-                <div className="flex items-center gap-2 mt-1 opacity-60 justify-center md:justify-start">
-                  <Clock size={14} className={isDark ? "text-slate-400" : "text-emerald-900"} />
-                  <p className={`text-xs font-bold uppercase tracking-widest ${isDark ? "text-slate-400" : "text-emerald-900"}`}>Analytics ({t[timeRange] || "1 Hour"})</p>
-                </div>
-              </div>
+        <div className="shrink-0 p-6 md:p-8 pb-0 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-xl ${isDark ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-600/10 text-emerald-700"}`}><TrendingUp size={18} /></div>
+            <div>
+              <h2 className={`text-base md:text-xl font-black uppercase tracking-wider ${isDark ? "text-white" : "text-emerald-950"}`}>{displayTitle}</h2>
+              <p className="text-[9px] font-bold uppercase tracking-[0.2em] opacity-40">{t[timeRange]}</p>
             </div>
-            <button onClick={onClose} className={`absolute top-6 right-6 md:static group p-2 rounded-full transition-all ${isDark ? "hover:bg-white/10 text-white" : "hover:bg-black/5 text-emerald-950"}`}>
-              <X size={32} className="transition-transform group-hover:rotate-90" />
-            </button>
           </div>
+          <button onClick={onClose} className="p-2 hover:opacity-50 transition-all"><X size={22} /></button>
         </div>
 
-        {/* CHART AREA */}
-        <div className="flex-grow overflow-y-auto scrollbar-hide px-6 md:px-10 pb-6">
+        <div className="shrink-0 h-[220px] md:h-[280px] px-2 md:px-6 flex flex-col overflow-hidden">
           {loading || isFetchingRange ? (
-            <div className="min-h-[250px] flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
-            </div>
+            <div className="flex-1 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" /></div>
           ) : chartData.length > 0 ? (
-            <div className="w-full">
-              <TrendChart title={displayTitle} data={chartData} color={isDark ? "#10b981" : "#059669"} unit={metricUnit} range={timeRange} />
+            <div ref={scrollContainerRef} className="h-full overflow-x-auto overflow-y-hidden pt-4 pb-2 scrollbar-none cursor-grab active:cursor-grabbing">
+              <div style={{ minWidth: getChartMinWidth(timeRange), height: '100%' }}>
+                <TrendChart title={displayTitle} data={chartData} color={isDark ? "#10b981" : "#059669"} unit={metricUnit} range={timeRange} t={t} />
+              </div>
             </div>
           ) : (
-            <div className="min-h-[250px] flex flex-col items-center justify-center text-center space-y-3">
-              <p className="font-bold text-muted-foreground uppercase tracking-widest text-sm">No data found</p>
+            <div className="flex-1 flex flex-col items-center justify-center opacity-40 min-h-[120px]">
+               <p className="font-black text-[10px] uppercase tracking-[0.3em]">No Data Recorded</p>
             </div>
           )}
-
-          {/* MOBILE BUTTONS - BOLDER & LARGER */}
-          <div className="flex md:hidden justify-center mt-10">
-            <div className={`flex rounded-full p-2 w-full max-w-[340px] mx-auto gap-1.5 ${isDark ? "bg-slate-800/80 shadow-inner" : "bg-emerald-100/80 shadow-inner"}`}>
-              {["1h", "24h", "7d", "30d"].map(range => (
-                <button 
-                  key={range} 
-                  onClick={() => handleTimeRangeChange(range)} 
-                  className={`flex-1 flex flex-col items-center justify-center py-3 rounded-2xl transition-all duration-300 ${timeRange === range ? `shadow-xl scale-[1.08] z-10 ${isDark ? "bg-slate-600 text-white" : "bg-white text-emerald-900"}` : `opacity-40 ${isDark ? "text-slate-300" : "text-emerald-900"}`}`}
-                >
-                  <span className="text-sm font-black leading-none">{t[range].split(' ')[0]}</span>
-                  <span className="text-[9px] font-black uppercase tracking-tighter mt-0.5">{t[range].split(' ')[1]}</span>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
-        {/* DESKTOP BUTTONS - CENTERED & LARGE */}
-        <div className="hidden md:flex justify-center p-10 pt-0">
-          <div className={`flex rounded-full p-2 gap-3 ${isDark ? "bg-slate-800/70" : "bg-emerald-100/70"}`}>
+        <div className="shrink-0 p-6 md:p-8 pt-2 flex justify-center">
+          <div className={`grid grid-cols-4 md:flex items-center w-full md:w-auto rounded-2xl p-1 gap-1 ${isDark ? "bg-slate-800/60" : "bg-emerald-100/60"}`}>
             {["1h", "24h", "7d", "30d"].map(range => (
-              <button 
-                key={range} 
-                onClick={() => handleTimeRangeChange(range)} 
-                className={`flex items-baseline gap-2 px-8 py-3 rounded-full transition-all duration-300 ${timeRange === range ? `shadow-lg scale-105 ${isDark ? "bg-slate-600 text-white" : "bg-white text-emerald-900"}` : `opacity-40 hover:opacity-100 ${isDark ? "text-slate-300" : "text-emerald-950"}`}`}
-              >
-                <span className="text-base font-black">{t[range].split(' ')[0]}</span>
-                <span className="text-xs font-black uppercase tracking-widest opacity-80">{t[range].split(' ')[1]}</span>
+              <button key={range} onClick={() => handleTimeRangeChange(range)} className={`px-1 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase transition-all whitespace-nowrap ${timeRange === range ? "bg-emerald-500 text-white shadow-lg" : `opacity-40 hover:opacity-100 ${isDark ? "text-slate-200" : "text-emerald-950"}`}`}>
+                {t[range]}
               </button>
             ))}
           </div>
         </div>
-
-        <div className={`h-2 w-full shrink-0 ${isDark ? "bg-emerald-500/20" : "bg-emerald-600/10"}`} />
       </div>
     </div>
   );
 
   return createPortal(modalContent, document.body);
-
 };
 
 export default memo(TrendPopup);
