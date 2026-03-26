@@ -1,0 +1,12 @@
+{
+  "rules": {
+    ".read": "now < 1775413800000",
+    ".write": "now < 1775413800000",
+    "weather": {
+      ".indexOn": "timestamp"
+    },
+    "subscribers": {
+      ".indexOn": ["email"]
+    }
+  }
+}

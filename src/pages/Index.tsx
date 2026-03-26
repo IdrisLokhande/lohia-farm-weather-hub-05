@@ -6,6 +6,7 @@ import HeroSection from "@/components/dashboard/HeroSection";
 import MetricCard from "@/components/dashboard/MetricCard";
 import TrendChart from "@/components/dashboard/TrendChart";
 import TrendPopup from "@/components/dashboard/TrendPopup";
+import SubscribeAlerts from "@/components/dashboard/SubscribeAlerts";
 import SystemStatus from "@/components/dashboard/SystemStatus";
 import DashboardFooter from "@/components/dashboard/DashboardFooter";
 import { getFarmData } from "@/lib/farmData";
@@ -67,6 +68,25 @@ const translations = {
     noData: "No data found for the selected range.",
     errorFetching: "An error occurred while fetching the data.",
     selectDates: "Please select both start and end dates.",
+    // Subscription translations
+    subscribeToAlerts: "Subscribe to Alerts",
+    alertSubscription: "Alert Subscription",
+    unsubscribe: "Unsubscribe",
+    subscribeNow: "Subscribe Now",
+    confirmUnsubscribe: "Confirm Unsubscribe",
+    successfullySubscribed: "Successfully Subscribed!",
+    successfullyUnsubscribed: "Successfully Unsubscribed!",
+    receiveAlertsDesc: "You will now receive email alerts for critical breaches.",
+    noLongerReceiveAlertsDesc: "You will no longer receive alert notifications.",
+    subscribeDesc: "Enter your email address to receive real-time notifications when environmental parameters (Temperature, CO₂, Humidity, AQI) breach critical thresholds.",
+    unsubscribeDesc: "Enter the email address you wish to remove from our alert mailing list.",
+    emailAddress: "Email Address",
+    wantToUnsubscribe: "Want to unsubscribe instead?",
+    wantToSubscribe: "Wait, I want to subscribe",
+    emailAlreadySubscribed: "This email is already subscribed to alerts.",
+    emailNotFound: "Email not found in our subscriber list.",
+    validEmailError: "Please enter a valid email address.",
+    genericError: "An error occurred. Please try again.",
   },
   hi: {
     dashBoardTitle: "जियोसेंस",
@@ -121,6 +141,25 @@ const translations = {
     noData: "चयनित सीमा के लिए कोई डेटा नहीं मिला।",
     errorFetching: "डेटा प्राप्त करते समय एक त्रुटि हुई।",
     selectDates: "कृपया प्रारंभ और अंतिम दोनों तिथियां चुनें।",
+    // Subscription translations
+    subscribeToAlerts: "अलर्ट के लिए सब्सक्राइब करें",
+    alertSubscription: "अलर्ट सदस्यता",
+    unsubscribe: "सदस्यता समाप्त करें",
+    subscribeNow: "अभी सब्सक्राइब करें",
+    confirmUnsubscribe: "सदस्यता समाप्त करने की पुष्टि करें",
+    successfullySubscribed: "सफलतापूर्वक सब्सक्राइब किया गया!",
+    successfullyUnsubscribed: "सफलतापूर्वक सदस्यता समाप्त की गई!",
+    receiveAlertsDesc: "अब आपको महत्वपूर्ण उल्लंघनों के लिए ईमेल अलर्ट प्राप्त होंगे।",
+    noLongerReceiveAlertsDesc: "अब आपको अलर्ट सूचनाएं प्राप्त नहीं होंगी।",
+    subscribeDesc: "जब पर्यावरणीय पैरामीटर (तापमान, CO₂, आर्द्रता, AQI) महत्वपूर्ण थ्रेसहोल्ड का उल्लंघन करते हैं तो वास्तविक समय की सूचनाएं प्राप्त करने के लिए अपना ईमेल पता दर्ज करें।",
+    unsubscribeDesc: "हमारी अलर्ट मेलिंग सूची से हटाने के लिए इच्छित ईमेल पता दर्ज करें।",
+    emailAddress: "ईमेल पता",
+    wantToUnsubscribe: "क्या आप इसके बजाय सदस्यता समाप्त करना चाहते हैं?",
+    wantToSubscribe: "रुको, मैं सब्सक्राइब करना चाहता हूं",
+    emailAlreadySubscribed: "यह ईमेल पहले से ही अलर्ट के लिए सब्सक्राइब है।",
+    emailNotFound: "हमारी सब्सक्राइबर सूची में ईमेल नहीं मिला।",
+    validEmailError: "कृपया एक वैध ईमेल पता दर्ज करें।",
+    genericError: "एक त्रुटि हुई। कृपया पुन: प्रयास करें।",
   },
   mr: {
     dashBoardTitle: "जिओसेन्स",
@@ -175,6 +214,25 @@ const translations = {
     noData: "निवडलेल्या श्रेणीसाठी कोणताही डेटा आढळला नाही.",
     errorFetching: "डेटा मिळवताना एक त्रुटी आली.",
     selectDates: "कृपया प्रारंभ आणि शेवटची तारीख दोन्ही निवडा.",
+    // Subscription translations
+    subscribeToAlerts: "सूचनांसाठी सदस्यता घ्या",
+    alertSubscription: "सूचना सदस्यता",
+    unsubscribe: "सदस्यता रद्द करा",
+    subscribeNow: "आता सदस्यता घ्या",
+    confirmUnsubscribe: "सदस्यता रद्द करण्याची पुष्टी करा",
+    successfullySubscribed: "यशस्वीरित्या सदस्यता घेतली!",
+    successfullyUnsubscribed: "यशस्वीरित्या सदस्यता रद्द केली!",
+    receiveAlertsDesc: "तुम्हाला आता गंभीर उल्लंघनांसाठी ईमेल सूचना मिळतील.",
+    noLongerReceiveAlertsDesc: "तुम्हाला आता सूचना सूचना मिळणार नाहीत.",
+    subscribeDesc: "जेव्हा पर्यावरणीय मापदंड (तापमान, CO₂, आर्द्रता, AQI) गंभीर उंबरठा ओलांडतात तेव्हा रिअल-टाइम सूचना प्राप्त करण्यासाठी तुमचा ईमेल पत्ता प्रविष्ट करा.",
+    unsubscribeDesc: "आमच्या सूचना मेलिंग सूचीमधून काढण्यासाठी इच्छित ईमेल पत्ता प्रविष्ट करा.",
+    emailAddress: "ईमेल पत्ता",
+    wantToUnsubscribe: "तुम्ही त्याऐवजी सदस्यता रद्द करू इच्छिता?",
+    wantToSubscribe: "थांबा, मला सदस्यता घ्यायची आहे",
+    emailAlreadySubscribed: "या ईमेलने आधीच सूचनांसाठी सदस्यता घेतली आहे.",
+    emailNotFound: "आमच्या सदस्य सूचीमध्ये ईमेल आढळला नाही.",
+    validEmailError: "कृपया एक वैध ईमेल पत्ता प्रविष्ट करा.",
+    genericError: "एक त्रुटी आली. कृपया पुन्हा प्रयत्न करा.",
   },
 };
 
@@ -413,6 +471,11 @@ const translations = {
 
       {/* 5. MAIN CONTENT AREA */}
       <main className="container mx-auto px-4 py-6 md:px-6 relative z-10">
+        
+        {/* Subscription Button Area */}
+        <div className="flex justify-end mb-4 md:mb-6">
+          <SubscribeAlerts isDark={isDark} t={t} />
+        </div>
         
         {/* Metric Cards Grid */}
         <div className="grid gap-4 min-[910px]:grid-cols-2 min-[1300px]:grid-cols-3 grid-auto-rows-fr">
