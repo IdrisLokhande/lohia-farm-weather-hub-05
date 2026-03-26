@@ -67,7 +67,6 @@ const translations = {
     noData: "No data found for the selected range.",
     errorFetching: "An error occurred while fetching the data.",
     selectDates: "Please select both start and end dates.",
-    lowBattery: "Low Battery",
   },
   hi: {
     dashBoardTitle: "जियोसेंस",
@@ -122,7 +121,6 @@ const translations = {
     noData: "चयनित सीमा के लिए कोई डेटा नहीं मिला।",
     errorFetching: "डेटा प्राप्त करते समय एक त्रुटि हुई।",
     selectDates: "कृपया प्रारंभ और अंतिम दोनों तिथियां चुनें।",
-    lowBattery: "कम बैटरी",
   },
   mr: {
     dashBoardTitle: "जिओसेन्स",
@@ -177,11 +175,10 @@ const translations = {
     noData: "निवडलेल्या श्रेणीसाठी कोणताही डेटा आढळला नाही.",
     errorFetching: "डेटा मिळवताना एक त्रुटी आली.",
     selectDates: "कृपया प्रारंभ आणि शेवटची तारीख दोन्ही निवडा.",
-    lowBattery: "कमी बॅटरी",
   },
 };
 
-const Index = () => {
+  const Index = () => {
   const [isDark, setIsDark] = useState(true);
   const [lang, setLang] = useState("en");
   const [activeTrend, setActiveTrend] = useState<{ key: string; unit: string } | null>(null);
@@ -191,13 +188,7 @@ const Index = () => {
   const t = translations[lang];
 
   // 1. Data Hooks
-  const {
-    liveData,
-    systemStatus,
-    isOffline,
-    loading: liveLoading,
-    isLowBattery,
-  } = useFarmHub(lang);
+  const { liveData, systemStatus, isOffline, loading: liveLoading } = useFarmHub(lang);
   const { history, loading: historyLoading } = useHistoricalData();
 
   const formatValue = (val, isInt = false) => {
@@ -235,13 +226,11 @@ const Index = () => {
       switch (key) {
         case "temperature":
           if (val >= 23 && val <= 34) return { status: "good", label: "Good" };
-          if ((val >= 15 && val <= 22) || (val >= 35 && val <= 40))
-            return { status: "moderate", label: "Moderate" };
+          if ((val >= 15 && val <= 22) || (val >= 35 && val <= 40)) return { status: "moderate", label: "Moderate" };
           return { status: "poor", label: "Poor" };
         case "humidity":
           if (val >= 60 && val <= 80) return { status: "good", label: "Good" };
-          if ((val >= 45 && val < 60) || (val > 80 && val <= 85))
-            return { status: "moderate", label: "Moderate" };
+          if ((val >= 45 && val < 60) || (val > 80 && val <= 85)) return { status: "moderate", label: "Moderate" };
           return { status: "poor", label: "Poor" };
         case "pressure":
           if (val > 960) return { status: "good", label: "Good" };
@@ -249,8 +238,7 @@ const Index = () => {
           return { status: "poor", label: "Poor" };
         case "lintensity":
           if (val >= 45000 && val <= 85000) return { status: "good", label: "Good" };
-          if ((val >= 20000 && val < 45000) || (val > 85000 && val <= 100000))
-            return { status: "moderate", label: "Moderate" };
+          if ((val >= 20000 && val < 45000) || (val > 85000 && val <= 100000)) return { status: "moderate", label: "Moderate" };
           return { status: "poor", label: "Poor" };
         case "co2":
           if (val >= 500 && val <= 900) return { status: "good", label: "Good" };
@@ -305,14 +293,10 @@ const Index = () => {
         m.target.statusLabel = threshold.label;
       });
 
-      const a1 = Number(liveData.pm1 || 0),
-        a25 = Number(liveData.pm25 || 0),
-        a10 = Number(liveData.pm10 || 0);
+      const a1 = Number(liveData.pm1 || 0), a25 = Number(liveData.pm25 || 0), a10 = Number(liveData.pm10 || 0);
       const finalAQI = WeatherPhysics.calculateIndiaAQI(a25, a10);
       const aqiThreshold = getThresholdStatus("airQuality", finalAQI);
-      const aqiHistory = history.map(point =>
-        WeatherPhysics.calculateIndiaAQI(Number(point.pm25 || 0), Number(point.pm10 || 0))
-      );
+      const aqiHistory = history.map(point => WeatherPhysics.calculateIndiaAQI(Number(point.pm25 || 0), Number(point.pm10 || 0)));
 
       baseData.airQuality = {
         ...baseData.airQuality,
@@ -322,33 +306,22 @@ const Index = () => {
         max: formatValue(Math.max(...aqiHistory, finalAQI), true),
         status: aqiThreshold.status,
         statusLabel: aqiThreshold.label,
-        pmBreakdown: [
-          { l: "PM1.0", v: formatValue(a1) },
-          { l: "PM2.5", v: formatValue(a25) },
-          { l: "PM10.0", v: formatValue(a10) },
-        ],
+        pmBreakdown: [{ l: "PM1.0", v: formatValue(a1) }, { l: "PM2.5", v: formatValue(a25) }, { l: "PM10.0", v: formatValue(a10) }],
       };
 
       const curTemp = Number(liveData.temperature || 0);
       const curHum = Number(liveData.humidity || 0);
       const feelsLikeTemp = WeatherPhysics.getFeelsLike(curTemp, curHum);
-      const vaporPressure = WeatherPhysics.getVaporPressure(
-        curTemp,
-        Number(liveData.pressure || 0)
-      );
+      const vaporPressure = WeatherPhysics.getVaporPressure(curTemp, Number(liveData.pressure || 0));
       const absoluteHumidity = WeatherPhysics.getAbsoluteHumidity(curTemp, curHum);
 
-      if (!isNaN(feelsLikeTemp))
-        baseData.environment.temperature.description = `${t.feelsLike} ${feelsLikeTemp.toFixed(1)} °C`;
-      if (!isNaN(vaporPressure))
-        baseData.environment.pressure.description = `${t.vaporPressure} ${vaporPressure.toFixed(1)} hPa`;
-      if (!isNaN(absoluteHumidity))
-        baseData.environment.humidity.description = `${t.absoluteHumidity} ${absoluteHumidity.toFixed(1)} g/m³`;
+      if (!isNaN(feelsLikeTemp)) baseData.environment.temperature.description = `${t.feelsLike} ${feelsLikeTemp.toFixed(1)} °C`;
+      if (!isNaN(vaporPressure)) baseData.environment.pressure.description = `${t.vaporPressure} ${vaporPressure.toFixed(1)} hPa`;
+      if (!isNaN(absoluteHumidity)) baseData.environment.humidity.description = `${t.absoluteHumidity} ${absoluteHumidity.toFixed(1)} g/m³`;
       baseData.environment.lintensity.description = `${t.lintensityDesc}`;
       baseData.co2.description = `${t.co2Desc}`;
       const maxPM = Math.max(a1, a25, a10);
-      const majorPollutant =
-        maxPM == a1 ? t.pm1 : maxPM == a25 ? t.pm25 : maxPM == a10 ? t.pm10 : t.none;
+      const majorPollutant = maxPM == a1 ? t.pm1 : maxPM == a25 ? t.pm25 : maxPM == a10 ? t.pm10 : t.none;
       baseData.airQuality.description = `${t.majorPollutant} ${majorPollutant}`;
     }
 
@@ -362,11 +335,11 @@ const Index = () => {
     }
 
     // --- D. SYNC LOCK ---
-    const syncing =
-      liveLoading ||
-      !liveData ||
-      !baseData.systemStatus.lastUpdate ||
-      baseData.systemStatus.lastUpdate === "---" ||
+    const syncing = 
+      liveLoading || 
+      !liveData || 
+      !baseData.systemStatus.lastUpdate || 
+      baseData.systemStatus.lastUpdate === "---" || 
       (historyLoading && history.length === 0);
 
     return { data: baseData, isInitialSync: syncing, isVisualOffline: finalVisualOffline };
@@ -379,35 +352,36 @@ const Index = () => {
 
   useEffect(() => {
     if (activeTrend) {
-      document.body.style.overflow = "hidden";
-      document.body.style.paddingRight = "var(--scrollbar-gutter, 0px)";
-      document.documentElement.classList.add("is-locked");
+      document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = 'var(--scrollbar-gutter, 0px)';
+      document.documentElement.classList.add('is-locked');
     } else {
       requestAnimationFrame(() => {
-        document.body.style.overflow = "";
-        document.body.style.paddingRight = "";
-        document.documentElement.classList.remove("is-locked");
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        document.documentElement.classList.remove('is-locked');
         window.scrollBy(0, 0);
       });
     }
 
     return () => {
-      document.body.style.overflow = "";
-      document.body.style.paddingRight = "";
-      document.documentElement.classList.remove("is-locked");
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+      document.documentElement.classList.remove('is-locked');
     };
   }, [activeTrend]);
 
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden selection:bg-emerald-500/30">
+      
       {/* 1. BACKGROUND LAYER */}
-      <div
+      <div 
         className={`absolute inset-0 -z-10 transition-colors duration-700 pointer-events-none ${
-          isDark
-            ? "bg-[#020617] bg-[radial-gradient(circle_at_top_left,#064e3b_0%,_transparent_35%),_radial-gradient(circle_at_bottom_right,#022c22_0%,_transparent_30%)]"
+          isDark 
+            ? "bg-[#020617] bg-[radial-gradient(circle_at_top_left,#064e3b_0%,_transparent_35%),_radial-gradient(circle_at_bottom_right,#022c22_0%,_transparent_30%)]" 
             : "bg-[#fffaf5] bg-[radial-gradient(ellipse_at_center,transparent_40%,#ffedd5_75%,_#fed7aa_100%)]"
         }`}
-        style={{ height: "100%" }}
+        style={{ height: '100%' }}
       />
 
       {/* 2. HEADER */}
@@ -423,26 +397,15 @@ const Index = () => {
         t={t}
       />
 
-      {/* 3. STICKY ALERT BANNERS */}
-      <div className="sticky top-0 z-50 flex flex-col w-full">
-        {isVisualOffline && (
-          <div className="bg-destructive/90 backdrop-blur-md text-white py-2 px-4 text-center flex items-center justify-center gap-2 border-b border-white/10 transition-all">
-            <WifiOff size={16} className="animate-pulse" />
-            <span className="font-bold uppercase tracking-widest text-[12px] md:text-[14px]">
-              {t.asleep}
-            </span>
-          </div>
-        )}
-
-        {isLowBattery && (
-          <div className="bg-amber-600/90 backdrop-blur-md text-white py-2 px-4 text-center flex items-center justify-center gap-2 border-b border-white/10 transition-all">
-            <AlertTriangle size={16} className="animate-pulse" />
-            <span className="font-bold uppercase tracking-widest text-[12px] md:text-[14px]">
-              {t.lowBattery}
-            </span>
-          </div>
-        )}
-      </div>
+      {/* 3. STICKY ALERT BANNER - Uses isVisualOffline from useMemo */}
+      {isVisualOffline && (
+        <div className="bg-destructive/90 backdrop-blur-md text-white py-2 px-4 text-center flex items-center justify-center gap-2 border-b border-white/10 sticky top-0 z-50 transition-all">
+          <WifiOff size={16} className="animate-pulse" />
+          <span className="font-bold uppercase tracking-widest text-[12px] md:text-[14px]">
+            {t.asleep}
+          </span>
+        </div>
+      )}
 
       {/* 4. LOADING & HERO */}
       {isInitialSync && <LoadingOverlay isDark={isDark} />}
@@ -450,17 +413,17 @@ const Index = () => {
 
       {/* 5. MAIN CONTENT AREA */}
       <main className="container mx-auto px-4 py-6 md:px-6 relative z-10">
+        
         {/* Metric Cards Grid */}
         <div className="grid gap-4 min-[910px]:grid-cols-2 min-[1300px]:grid-cols-3 grid-auto-rows-fr">
-          {["humidity", "pressure", "temperature", "lintensity", "airQuality", "co2"].map(key => (
+          {["humidity", "pressure", "temperature", "lintensity", "airQuality", "co2"].map((key) => (
             <div key={key} className="card-grid-item">
               <MetricCard
                 data={key === "airQuality" || key === "co2" ? data[key] : data.environment[key]}
                 enableShadow={!isDark}
                 t={t}
                 onShowTrend={() => {
-                  const metricData =
-                    key === "airQuality" || key === "co2" ? data[key] : data.environment[key];
+                  const metricData = key === "airQuality" || key === "co2" ? data[key] : data.environment[key];
                   setActiveTrend({ key, unit: metricData.unit || "" });
                 }}
               />
@@ -485,26 +448,19 @@ const Index = () => {
                 <Server
                   className={`h-5 w-5 shrink-0 ${isDark ? "text-emerald-500" : "text-blue-700"}`}
                 />
-                <h3
-                  className={`text-[13px] font-black uppercase tracking-[0.3em] leading-[1.4] -mr-[0.3em] ${isDark ? "text-muted-foreground" : "text-blue-950"}`}
-                >
+                <h3 className={`text-[13px] font-black uppercase tracking-[0.3em] leading-[1.4] -mr-[0.3em] ${isDark ? "text-muted-foreground" : "text-blue-950"}`}>
                   {t.systemStatus}
                 </h3>
               </div>
 
               {/* Only show 'LIVE' badge if NOT offline */}
               {!isVisualOffline && liveData && (
-                <div
-                  className={`text-[10px] font-bold flex items-center gap-2 px-3 xs:px-4 py-1.5 rounded-full border backdrop-blur-sm transition-all shrink-0
+                <div className={`text-[10px] font-bold flex items-center gap-2 px-3 xs:px-4 py-1.5 rounded-full border backdrop-blur-sm transition-all shrink-0
                   ${isDark ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" : "text-blue-800 bg-blue-100/60 border-blue-400/30"}`}
                 >
                   <span className="relative flex h-2 w-2">
-                    <span
-                      className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isDark ? "bg-emerald-400" : "bg-blue-400"}`}
-                    ></span>
-                    <span
-                      className={`relative inline-flex rounded-full h-2 w-2 ${isDark ? "bg-emerald-500" : "bg-blue-700"}`}
-                    ></span>
+                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isDark ? "bg-emerald-400" : "bg-blue-400"}`}></span>
+                    <span className={`relative inline-flex rounded-full h-2 w-2 ${isDark ? "bg-emerald-500" : "bg-blue-700"}`}></span>
                   </span>
                   <span className="tracking-widest uppercase">{t.live}</span>
                 </div>
@@ -512,11 +468,11 @@ const Index = () => {
             </div>
 
             <div className={`relative z-10 ${!isDark ? "text-blue-950 font-bold" : ""}`}>
-              <SystemStatus
-                status={data.systemStatus}
-                isLight={!isDark}
-                t={t}
-                isVisualOffline={isVisualOffline}
+              <SystemStatus 
+                status={data.systemStatus} 
+                isLight={!isDark} 
+                t={t} 
+                isVisualOffline={isVisualOffline} 
               />
             </div>
           </div>
@@ -537,6 +493,7 @@ const Index = () => {
       />
     </div>
   );
+
 };
 
 export default Index;
