@@ -1,7 +1,26 @@
 /**
- * Cleans an array of raw weather data by replacing invalid values (0, NaN, null, undefined)
- * with a moving average of the last 10 valid readings.
+ * DATA CLEANER UTILITY - LOHIA FARM
+ * * This script cleans an array of weather data.
+ * If a value is 0, NaN, or missing, it replaces it with the MEDIAN
+ * of the previous valid readings.
  */
+
+/**
+ * Helper function to calculate the Median.
+ * Medians are superior to Means for sensor data because they
+ * effectively ignore random spikes (outliers).
+ */
+const calculateMedian = arr => {
+  if (arr.length === 0) return 0;
+
+  // 1. Sort the numbers small to large
+  const sorted = [...arr].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+
+  // 2. Return the middle value (or average of two middle values if even)
+  return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+};
+
 export const cleanDataArray = rawArray => {
   const fieldsToClean = [
     "temperature",
@@ -14,7 +33,7 @@ export const cleanDataArray = rawArray => {
     "pressure",
   ];
 
-  // Keep track of the last up to 10 valid values for each sensor to calculate the moving average
+  // Rolling memory buffer for valid data points
   const history = {
     temperature: [],
     humidity: [],
@@ -27,29 +46,32 @@ export const cleanDataArray = rawArray => {
   };
 
   return rawArray.map(record => {
+    // Create a copy so we don't mess with the original raw data
     const cleanedRecord = { ...record };
 
     fieldsToClean.forEach(field => {
-      let val = cleanedRecord[field];
+      let val = Number(cleanedRecord[field]);
 
-      // If the value is invalid (0, NaN, null, undefined)
+      // CHECK: Is the value "Dirty" (0, NaN, null, or undefined)?
       if (val === 0 || val === null || val === undefined || isNaN(val)) {
         const pastValues = history[field];
+
         if (pastValues.length > 0) {
-          // Calculate the mean of the recent history
-          const sum = pastValues.reduce((a, b) => a + b, 0);
-          const mean = sum / pastValues.length;
-          cleanedRecord[field] = Math.round(mean * 100) / 100; // Round to 2 decimal places
+          // ACTION: Replace the zero/bad data with the Median of historical good data
+          const median = calculateMedian(pastValues);
+          cleanedRecord[field] = Math.round(median * 100) / 100;
         } else {
-          // Failsafe: if there is no history yet, default to 0
+          // FAILSAFE: If there is no history at all yet, stay at 0
           cleanedRecord[field] = 0;
         }
-      }
+      } else {
+        // ACTION: If data is VALID (greater than 0), add to our history buffer
+        history[field].push(val);
 
-      // Add the cleaned (or originally valid) value to the history buffer
-      history[field].push(cleanedRecord[field]);
-      if (history[field].length > 10) {
-        history[field].shift(); // Keep only the last 10 records
+        // We keep the last 100 valid points for a very stable median calculation
+        if (history[field].length > 100) {
+          history[field].shift();
+        }
       }
     });
 
