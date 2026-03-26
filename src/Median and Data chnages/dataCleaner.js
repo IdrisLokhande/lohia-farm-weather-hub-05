@@ -1,23 +1,14 @@
 /**
  * DATA CLEANER UTILITY - LOHIA FARM
  * * This script cleans an array of weather data.
- * If a value is 0, NaN, or missing, it replaces it with the MEDIAN
- * of the previous valid readings.
+ * It uses a "Two-Pass" system to calculate the true global median of the
+ * downloaded dataset before applying fixes, ensuring consistency with the live dashboard.
  */
 
-/**
- * Helper function to calculate the Median.
- * Medians are superior to Means for sensor data because they
- * effectively ignore random spikes (outliers).
- */
 const calculateMedian = arr => {
   if (arr.length === 0) return 0;
-
-  // 1. Sort the numbers small to large
   const sorted = [...arr].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-
-  // 2. Return the middle value (or average of two middle values if even)
   return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 };
 
@@ -33,8 +24,8 @@ export const cleanDataArray = rawArray => {
     "pressure",
   ];
 
-  // Rolling memory buffer for valid data points
-  const history = {
+  // 1. FIRST PASS: Collect all valid data points across the entire downloaded dataset
+  const globalHistory = {
     temperature: [],
     humidity: [],
     pm1: [],
@@ -45,33 +36,33 @@ export const cleanDataArray = rawArray => {
     pressure: [],
   };
 
+  rawArray.forEach(record => {
+    fieldsToClean.forEach(field => {
+      const val = Number(record[field]);
+      // Only count valid, non-zero numbers for the baseline
+      if (val > 0 && !isNaN(val)) {
+        globalHistory[field].push(val);
+      }
+    });
+  });
+
+  // 2. Calculate the "True Median" for each field based on this specific dataset
+  const globalMedians = {};
+  fieldsToClean.forEach(field => {
+    globalMedians[field] = calculateMedian(globalHistory[field]);
+  });
+
+  // 3. SECOND PASS: Clean the array using the True Medians
   return rawArray.map(record => {
-    // Create a copy so we don't mess with the original raw data
     const cleanedRecord = { ...record };
 
     fieldsToClean.forEach(field => {
-      let val = Number(cleanedRecord[field]);
+      const val = Number(cleanedRecord[field]);
 
-      // CHECK: Is the value "Dirty" (<= 0, NaN, null, or undefined)?
+      // If the value is "Dirty" (0, negative, NaN, null)
       if (val <= 0 || val === null || val === undefined || isNaN(val)) {
-        const pastValues = history[field];
-
-        if (pastValues.length > 0) {
-          // ACTION: Replace the zero/bad data with the Median of historical good data
-          const median = calculateMedian(pastValues);
-          cleanedRecord[field] = Math.round(median * 100) / 100;
-        } else {
-          // FAILSAFE: If there is no history at all yet, stay at 0
-          cleanedRecord[field] = 0;
-        }
-      } else {
-        // ACTION: If data is VALID (greater than 0), add to our history buffer
-        history[field].push(val);
-
-        // We keep the last 100 valid points for a very stable median calculation
-        if (history[field].length > 100) {
-          history[field].shift();
-        }
+        // Replace with the global median calculated in Pass 1
+        cleanedRecord[field] = Math.round(globalMedians[field] * 100) / 100;
       }
     });
 
