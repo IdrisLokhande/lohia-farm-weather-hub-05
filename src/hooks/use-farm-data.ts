@@ -128,8 +128,20 @@ export const useFarmHub = (lang: string = "en") => {
 
           fields.forEach(field => {
             const val = Number(cleanedLive[field]);
-            // If live reading is 0 or negative, replace with the Median of the entire historical dataset
-            if (val <= 0 || isNaN(val)) {
+            let isDirty = val <= 0 || isNaN(val);
+
+            // Add specific outlier checks for unrealistic sensor readings
+            if (field === "humidity" && val === 100) {
+              isDirty = true;
+            }
+            if (field === "temperature" && val === 125) {
+              isDirty = true;
+            }
+            if (field === "co2" && val >= 3000) {
+              isDirty = true;
+            }
+
+            if (isDirty) {
               cleanedLive[field] = Math.round(getMedian(historyBuffer.current[field]) * 100) / 100;
             }
           });
