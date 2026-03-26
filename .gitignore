@@ -52,3 +52,5 @@ thumbs.db
 firebase_credentials.json
 .env
 __pycache__/
+
+serviceAccountKey.json
