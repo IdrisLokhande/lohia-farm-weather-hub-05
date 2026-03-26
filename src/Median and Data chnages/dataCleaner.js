@@ -59,20 +59,8 @@ export const cleanDataArray = rawArray => {
     fieldsToClean.forEach(field => {
       const val = Number(cleanedRecord[field]);
 
-      let isDirty = val <= 0 || val === null || val === undefined || isNaN(val);
-
-      // Add specific outlier checks for unrealistic sensor readings
-      if (field === "humidity" && val === 100) {
-        isDirty = true;
-      }
-      if (field === "temperature" && val === 125) {
-        isDirty = true;
-      }
-      if (field === "co2" && val >= 3000) {
-        isDirty = true;
-      }
-
-      if (isDirty) {
+      // If the value is "Dirty" (0, negative, NaN, null)
+      if (val <= 0 || val === null || val === undefined || isNaN(val)) {
         // Replace with the global median calculated in Pass 1
         cleanedRecord[field] = Math.round(globalMedians[field] * 100) / 100;
       }
