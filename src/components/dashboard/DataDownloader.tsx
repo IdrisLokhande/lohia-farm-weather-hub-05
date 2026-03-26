@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Download, Calendar, Database, Clock, X, ChevronDown, Loader2 } from "lucide-react";
 import { rtdb } from "@/lib/firebase";
 import { ref, get, query, orderByChild, startAt, endAt } from "firebase/database";
+import { cleanDataArray } from "@/Median and Data chnages/dataCleaner";
 
 interface DataDownloaderProps {
   isDark?: boolean;
@@ -120,7 +121,9 @@ const DataDownloader = ({ isDark = true, t }: DataDownloaderProps) => {
         dataEntries.push(child.val());
       });
 
-      generateCSV(dataEntries, `lohia_farm_data_${mode}_${new Date().getTime()}`);
+      // Clean the raw data to replace 0/NaN values with historical medians
+      const cleanedDataEntries = cleanDataArray(dataEntries);
+      generateCSV(cleanedDataEntries, `lohia_farm_data_${mode}_${new Date().getTime()}`);
     } catch (error) {
       console.error("Data export error:", error);
       alert(t.errorFetching);
