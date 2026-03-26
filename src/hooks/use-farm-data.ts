@@ -39,7 +39,8 @@ export const useFarmHub = (lang: string = "en") => {
   const [data, setData] = useState<{
     live: any | null;
     system: FarmData["systemStatus"] | null;
-  }>({ live: null, system: null });
+    isLowBattery?: boolean;
+  }>({ live: null, system: null, isLowBattery: false });
 
   const [isFirebaseConnected, setIsFirebaseConnected] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -115,6 +116,7 @@ export const useFarmHub = (lang: string = "en") => {
 
           // 2. Clean the LATEST record using the median of the WHOLE history
           const cleanedLive = { ...latestRecord };
+          let currentIsLowBattery = false;
           const fields = [
             "temperature",
             "humidity",
@@ -133,12 +135,15 @@ export const useFarmHub = (lang: string = "en") => {
             // Add specific outlier checks for unrealistic sensor readings
             if (field === "humidity" && val === 100) {
               isDirty = true;
+              currentIsLowBattery = true;
             }
             if (field === "temperature" && val === 125) {
               isDirty = true;
+              currentIsLowBattery = true;
             }
             if (field === "co2" && val >= 3000) {
               isDirty = true;
+              currentIsLowBattery = true;
             }
 
             if (isDirty) {
@@ -157,6 +162,7 @@ export const useFarmHub = (lang: string = "en") => {
               sensorsOnline: cleanedLive.sensorsOnline || 0,
               totalSensors: cleanedLive.totalSensors || "-",
             },
+            isLowBattery: currentIsLowBattery,
           });
           setLoading(false);
         } catch (error) {
@@ -181,5 +187,6 @@ export const useFarmHub = (lang: string = "en") => {
     systemStatus: data.system,
     isOffline: !isFirebaseConnected,
     loading: loading,
+    isLowBattery: data.isLowBattery,
   };
 };
