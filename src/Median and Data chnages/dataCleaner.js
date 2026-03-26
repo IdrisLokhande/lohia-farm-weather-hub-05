@@ -52,8 +52,8 @@ export const cleanDataArray = rawArray => {
     fieldsToClean.forEach(field => {
       let val = Number(cleanedRecord[field]);
 
-      // CHECK: Is the value "Dirty" (0, NaN, null, or undefined)?
-      if (val === 0 || val === null || val === undefined || isNaN(val)) {
+      // CHECK: Is the value "Dirty" (<= 0, NaN, null, or undefined)?
+      if (val <= 0 || val === null || val === undefined || isNaN(val)) {
         const pastValues = history[field];
 
         if (pastValues.length > 0) {

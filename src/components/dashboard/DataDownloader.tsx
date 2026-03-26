@@ -59,8 +59,8 @@ const DataDownloader = ({ isDark = true, t }: DataDownloaderProps) => {
         row.pm1 ?? "N/A",
         row.pm25 ?? "N/A",
         row.pm10 ?? "N/A",
-        row.uptime ?? "N/A",
-        row.sensorsOnline ?? "N/A",
+        row.uptime ?? "0h 0m",
+        row.sensorsOnline ?? "0",
       ].join(",");
     });
 

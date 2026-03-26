@@ -128,8 +128,8 @@ export const useFarmHub = (lang: string = "en") => {
 
           fields.forEach(field => {
             const val = Number(cleanedLive[field]);
-            // If live reading is 0, replace with the Median of the entire historical dataset
-            if (val === 0 || isNaN(val)) {
+            // If live reading is 0 or negative, replace with the Median of the entire historical dataset
+            if (val <= 0 || isNaN(val)) {
               cleanedLive[field] = Math.round(getMedian(historyBuffer.current[field]) * 100) / 100;
             }
           });
