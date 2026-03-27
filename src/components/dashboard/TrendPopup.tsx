@@ -39,13 +39,6 @@ const TrendPopup = ({
     }
   };
 
-  useEffect(() => {
-    if (scrollContainerRef.current && !isFetchingRange && chartData.length > 0) {
-      const container = scrollContainerRef.current;
-      container.scrollTo({ left: container.scrollWidth, behavior: 'instant' });
-    }
-  }, [chartData, isFetchingRange]);
-
   const processRawData = useCallback((rawData: any[], metric: string) => {
     if (!rawData || rawData.length === 0 || !metric) return [];
     return rawData.map(point => {
@@ -61,71 +54,94 @@ const TrendPopup = ({
     });
   }, []);
 
-  useEffect(() => {
-    if (activeMetric) {
-      document.body.style.overflow = 'hidden';
-      setTimeRange("1h");
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [activeMetric]);
-
-  useEffect(() => {
-    if (activeMetric && timeRange === "1h") {
-      const now = Date.now();
-      const oneHourAgo = now - 3600000;
-      const filteredHistory = history.filter(point => Number(point.timestamp) >= oneHourAgo);
-      setChartData(processRawData(filteredHistory, activeMetric));
-    }
-  }, [activeMetric, history, timeRange, processRawData]);
-
-  const handleTimeRangeChange = async (newRange: string) => {
-    if (newRange === timeRange) return;
-    setTimeRange(newRange);
-    const now = Date.now();
-    if (newRange === "1h") {
-      const oneHourAgo = now - 3600000;
-      const filtered = history.filter(p => Number(p.timestamp) >= oneHourAgo);
-      setChartData(processRawData(filtered, activeMetric!));
-      return;
-    }
+  // Fetch logic wrapped in a function so we can call it on mount
+  const fetchData = useCallback(async (range: string) => {
+    if (!activeMetric) return;
     setIsFetchingRange(true);
+    const now = Date.now();
+    
     try {
-      let startTime = now - (newRange === "24h" ? 86400000 : newRange === "7d" ? 604800000 : 2592000000);
+      // Logic for time windows
+      const ranges: Record<string, number> = {
+        "1h": 3600000,
+        "24h": 86400000,
+        "7d": 604800000,
+        "30d": 2592000000
+      };
       
-      // IMPROVED: Higher density sampling for 7d and 30d
-      let samplingInterval = newRange === "24h" ? 300000 : 
-                             newRange === "7d" ? 900000 : // 15 mins
-                             3600000; // 1 hour (much better than 4)
+      const startTime = now - (ranges[range] || 3600000);
+      
+      // Sampling: 1h gets everything (0 delay), others are sampled
+      const samplingInterval = range === "1h" ? 0 : 
+                               range === "24h" ? 300000 : 
+                               range === "7d" ? 900000 : 3600000;
 
       const weatherRef = ref(rtdb, "weather");
-      const dbQuery = query(weatherRef, orderByChild("timestamp"), startAt(Number(startTime)));
+      const dbQuery = query(weatherRef, orderByChild("timestamp"), startAt(startTime));
       const snapshot = await get(dbQuery);
+      
       if (!snapshot.exists()) { setChartData([]); return; }
+      
       const rawData: any[] = [];
       snapshot.forEach(child => {
         const val = child.val();
         const ts = Number(val.timestamp);
         if (ts >= startTime && ts <= now) rawData.push({ ...val, id: child.key, timestamp: ts });
       });
+
+      // CRITICAL: Always sort ascending (Left to Right)
       rawData.sort((a, b) => a.timestamp - b.timestamp);
+
       let lastTs = 0;
       const sampled = rawData.filter(p => {
         if (p.timestamp - lastTs >= samplingInterval) { lastTs = p.timestamp; return true; }
         return false;
       });
+
       const final: any[] = [];
-      // RELAXED: gapThreshold is now 3.5x interval to avoid stuttering lines
-      const gapThreshold = samplingInterval * 3.5;
+      const gapThreshold = samplingInterval > 0 ? samplingInterval * 3.5 : 600000; // 10 min threshold for 1h
+      
       for (let i = 0; i < sampled.length; i++) {
         final.push(sampled[i]);
         if (i < sampled.length - 1 && (sampled[i+1].timestamp - sampled[i].timestamp) > gapThreshold) {
-          final.push({ timestamp: sampled[i].timestamp + (sampled[i+1].timestamp - sampled[i].timestamp) / 2, value: null, isGapMarker: true, gapStart: sampled[i].timestamp, gapEnd: sampled[i+1].timestamp, id: `gap-${sampled[i].timestamp}` });
+          final.push({ 
+            timestamp: sampled[i].timestamp + (sampled[i+1].timestamp - sampled[i].timestamp) / 2, 
+            value: null, isGapMarker: true, gapStart: sampled[i].timestamp, gapEnd: sampled[i+1].timestamp, 
+            id: `gap-${sampled[i].timestamp}` 
+          });
         }
       }
-      setChartData(processRawData(final, activeMetric!));
-    } catch (e) { setChartData([]); } finally { setIsFetchingRange(false); }
+      setChartData(processRawData(final, activeMetric));
+    } catch (e) {
+      setChartData([]);
+    } finally {
+      setIsFetchingRange(false);
+    }
+  }, [activeMetric, processRawData]);
+
+  // Initial load when modal opens
+  useEffect(() => {
+    if (activeMetric) {
+      document.body.style.overflow = 'hidden';
+      setTimeRange("1h");
+      fetchData("1h");
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [activeMetric, fetchData]);
+
+  useEffect(() => {
+    if (scrollContainerRef.current && !isFetchingRange && chartData.length > 0) {
+      const container = scrollContainerRef.current;
+      container.scrollTo({ left: container.scrollWidth, behavior: 'instant' });
+    }
+  }, [chartData, isFetchingRange]);
+
+  const handleTimeRangeChange = (newRange: string) => {
+    if (newRange === timeRange) return;
+    setTimeRange(newRange);
+    fetchData(newRange);
   };
 
   if (!activeMetric) return null;
@@ -137,10 +153,7 @@ const TrendPopup = ({
       
       <style>{`
         @media (max-height: 545px) {
-          .trend-card-scrollable {
-            overflow-y: auto !important;
-            display: block !important;
-          }
+          .trend-card-scrollable { overflow-y: auto !important; display: block !important; }
           .trend-card-scrollable > div { margin-bottom: 0.5rem; }
         }
         .trend-card-scrollable::-webkit-scrollbar { display: none; }
@@ -161,7 +174,7 @@ const TrendPopup = ({
         </div>
 
         <div className="shrink-0 h-[220px] md:h-[280px] px-2 md:px-6 flex flex-col overflow-hidden">
-          {loading || isFetchingRange ? (
+          {isFetchingRange ? (
             <div className="flex-1 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" /></div>
           ) : chartData.length > 0 ? (
             <div ref={scrollContainerRef} className="h-full overflow-x-auto overflow-y-hidden pt-4 pb-2 scrollbar-none cursor-grab active:cursor-grabbing">

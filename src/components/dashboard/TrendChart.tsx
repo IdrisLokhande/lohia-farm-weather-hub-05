@@ -39,7 +39,7 @@ const TrendChart = ({ title, data, color, unit, range, t }: TrendChartProps) => 
         .ping-dot > circle { transform-origin: center; transform-box: fill-box; animation: chart-ripple 1.4s ease-out infinite; }
       `}</style>
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 25, right: 100, left: 100, bottom: 15 }}>
+        <AreaChart data={data} margin={{ top: 25, right: 0, left: 0, bottom: 15 }}>
           <defs>
             <linearGradient id={`grad-${title}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={color} stopOpacity={0.4} />
@@ -57,9 +57,10 @@ const TrendChart = ({ title, data, color, unit, range, t }: TrendChartProps) => 
             dataKey="timestamp" 
             type="number" 
             domain={["dataMin", "dataMax"]} 
-            tickCount={range === "1h" ? 4 : range === "24h" ? 8 : range === "7d" ? 14 : 20} 
-            interval={0} 
-            padding={{ left: 100, right: 100 }} 
+            // FIXED: Only 2 ticks for 1h (Start and End) to keep it clean
+            tickCount={range === "1h" ? 2 : range === "24h" ? 6 : range === "7d" ? 12 : 18} 
+            interval="preserveStartEnd" 
+            padding={range === "1h" ? { left: 40, right: 40 } : { left: 100, right: 100 }} 
             tickFormatter={formatXAxis} 
             tick={{ fontSize: 9, fontWeight: 900, fill: "hsl(var(--muted-foreground))" }} 
             axisLine={false} 
