@@ -13,6 +13,7 @@ const SubscribeAlerts = ({ isDark = true, t }: SubscribeAlertsProps) => {
   const [showModal, setShowModal] = useState(false);
   const [mode, setMode] = useState<"subscribe" | "unsubscribe">("subscribe");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -30,18 +31,22 @@ const SubscribeAlerts = ({ isDark = true, t }: SubscribeAlertsProps) => {
   }, [showModal]);
 
   const handleSubmit = async () => {
-    if (!email || !/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
-      setError(t.validEmailError);
+    if (!email && !phone) {
+      setError("Please provide an email or phone number.");
       return;
     }
     
+    if (email && !/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
+      setError(t.validEmailError);
+      return;
+    }
+
     setLoading(true);
     setError("");
     
     try {
       if (mode === "subscribe") {
-        // 1. Check if the email is already subscribed
-        const q = query(ref(rtdb, "subscribers"), orderByChild("email"), equalTo(email.trim()));
+        const q = query(ref(rtdb, "subscribers"), orderByChild(email ? "email" : "phone"), equalTo(email ? email.trim() : phone.trim()));
         const snapshot = await get(q);
         
         if (snapshot.exists()) {
@@ -50,12 +55,12 @@ const SubscribeAlerts = ({ isDark = true, t }: SubscribeAlertsProps) => {
         
         // 2. If not subscribed, add them to the database
         await push(ref(rtdb, "subscribers"), {
-          email: email.trim(),
+          email: email ? email.trim() : "",
+          phone: phone ? phone.trim() : "",
           timestamp: serverTimestamp()
         });
       } else {
-        // Unsubscribe Logic: Find the email and remove it
-        const q = query(ref(rtdb, "subscribers"), orderByChild("email"), equalTo(email.trim()));
+        const q = query(ref(rtdb, "subscribers"), orderByChild(email ? "email" : "phone"), equalTo(email ? email.trim() : phone.trim()));
         const snapshot = await get(q);
         
         if (snapshot.exists()) {
@@ -72,6 +77,7 @@ const SubscribeAlerts = ({ isDark = true, t }: SubscribeAlertsProps) => {
       }
       setSuccess(true);
       setEmail("");
+      setPhone("");
       setTimeout(() => {
         setShowModal(false);
         setSuccess(false);
@@ -143,9 +149,15 @@ const SubscribeAlerts = ({ isDark = true, t }: SubscribeAlertsProps) => {
                       {t.emailAddress}
                     </label>
                     <input type="email" id="email-input" placeholder="farmer@lohiafarm.com" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSubmit()} className={`w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${isDark ? "bg-slate-950 border-white/10" : "bg-slate-50 border-black/10"}`} />
-                    {error && <p className="text-red-500 text-xs mt-2 font-medium">{error}</p>}
+                </div>
+                <div className="mt-3">
+                  <label htmlFor="phone-input" className="block text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1.5">
+                    Phone Number (Optional)
+                  </label>
+                  <input type="tel" id="phone-input" placeholder="+919876543210" value={phone} onChange={(e) => setPhone(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSubmit()} className={`w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${isDark ? "bg-slate-950 border-white/10" : "bg-slate-50 border-black/10"}`} />
                   </div>
-                  <button onClick={handleSubmit} disabled={loading} className={`w-full mt-2 py-3 rounded-lg text-sm font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2 ${isDark ? "bg-emerald-500 text-slate-950 hover:bg-emerald-400 disabled:bg-emerald-500/50" : "bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-emerald-600/50"} ${mode === "unsubscribe" && "bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/30"}`}>
+                {error && <p className="text-red-500 text-xs mt-2 font-medium">{error}</p>}
+                  <button onClick={handleSubmit} disabled={loading} className={`w-full mt-2 py-3 rounded-lg text-sm font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2 ${mode === "subscribe" ? (isDark ? "bg-emerald-500 text-slate-950 hover:bg-emerald-400 disabled:bg-emerald-500/50" : "bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-emerald-600/50") : "bg-red-600 text-white hover:bg-red-700 disabled:bg-red-600/50"}`}>
                     {loading ? <Loader2 size={16} className="animate-spin" /> : <BellRing size={16} />}
                     {mode === "subscribe" ? t.subscribeNow : t.confirmUnsubscribe}
                   </button>

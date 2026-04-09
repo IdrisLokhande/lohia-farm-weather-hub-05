@@ -19,10 +19,25 @@ EMAIL_SENDER = os.environ.get("EMAIL_SENDER")
 EMAIL_APP_PASSWORD = os.environ.get("EMAIL_APP_PASSWORD")
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
 
-# Validate that environment variables are set
-if not all([EMAIL_SENDER, EMAIL_APP_PASSWORD, ADMIN_EMAIL]):
-    print("❌ CRITICAL ERROR: Missing one or more environment variables.")
-    print("   Ensure EMAIL_SENDER, EMAIL_APP_PASSWORD, and ADMIN_EMAIL are set in your .env file or server environment.")
+# --- SMS Credentials (Twilio) ---
+TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN")
+TWILIO_FROM_NUMBER = os.environ.get("TWILIO_FROM_NUMBER")
+ADMIN_PHONE = os.environ.get("ADMIN_PHONE")
+
+# Validate that core environment variables are set
+required_email_vars = {
+    "EMAIL_SENDER": EMAIL_SENDER,
+    "EMAIL_APP_PASSWORD": EMAIL_APP_PASSWORD,
+    "ADMIN_EMAIL": ADMIN_EMAIL
+}
+missing_vars = [k for k, v in required_email_vars.items() if not v]
+
+if missing_vars:
+    print("❌ CRITICAL ERROR: The following required environment variables are missing:")
+    for var in missing_vars:
+        print(f"   - {var}")
+    print("\n   Please ensure they are set in your .env file in the project root, or as system environment variables.")
     sys.exit(1)
 
 # --- Firebase Configuration ---
@@ -52,6 +67,19 @@ def get_all_recipients():
                     recipients.add(v['email'])
     except Exception as e:
         print(f"⚠️ Could not fetch subscribers from Firebase: {e}")
+    return list(recipients)
+
+def get_all_sms_recipients():
+    """Fetches all subscriber phone numbers from Firebase."""
+    recipients = {ADMIN_PHONE} if ADMIN_PHONE else set()
+    try:
+        sub_ref = db.reference('/subscribers').get()
+        if sub_ref:
+            for v in sub_ref.values():
+                if isinstance(v, dict) and v.get('phone'):
+                    recipients.add(v['phone'])
+    except Exception as e:
+        print(f"⚠️ Could not fetch SMS subscribers from Firebase: {e}")
     return list(recipients)
 
 # --- Centralized Thresholds & Settings ---
