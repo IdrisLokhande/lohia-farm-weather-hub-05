@@ -69,15 +69,44 @@ def send_welcome_email(recipient_email):
     
     welcome_apobj.notify(title="🌿 Lohia Farm | Subscription Confirmed", body=formatted_body, body_format=NotifyFormat.HTML)
 
+def send_unsubscribe_sms(phone):
+    """Sends an SMS confirming the user has been unsubscribed."""
+    print(f"🚫 SMS User unsubscribed: {phone}. Sending confirmation...")
+    sms_apobj = apprise.Apprise()
+    twilio_url = f"twilio://{config.TWILIO_ACCOUNT_SID}:{config.TWILIO_AUTH_TOKEN}@{config.TWILIO_FROM_NUMBER}/{phone}"
+    sms_apobj.add(twilio_url)
+    sms_apobj.notify(
+        title="Lohia Farm",
+        body="🚫 You have been unsubscribed from Lohia Farm SMS alerts. You will no longer receive notifications."
+    )
+
+def send_welcome_sms(phone):
+    """Sends an SMS welcoming a new subscriber."""
+    print(f"📱 New SMS subscriber detected: {phone}. Sending welcome SMS...")
+    sms_apobj = apprise.Apprise()
+    twilio_url = f"twilio://{config.TWILIO_ACCOUNT_SID}:{config.TWILIO_AUTH_TOKEN}@{config.TWILIO_FROM_NUMBER}/{phone}"
+    sms_apobj.add(twilio_url)
+    success = sms_apobj.notify(
+        title="Lohia Farm",
+        body="🌿 Welcome to Lohia Farm Alerts! You are now subscribed to receive critical threshold and offline SMS notifications."
+    )
+    if not success:
+        print(f"❌ FAILED to send welcome SMS to {phone}")
+
 def process_subscriber_record(key, val):
     email = val.get('email')
-    if not email: return
+    phone = val.get('phone')
+    if not email and not phone: return
+    
     if val.get('unsubscribe_request'):
-        send_unsubscribe_email(email)
+        if email: send_unsubscribe_email(email)
+        if phone: send_unsubscribe_sms(phone)
         db.reference(f'/subscribers/{key}').delete()
         return
+        
     if not val.get('welcome_sent'):
-        send_welcome_email(email)
+        if email: send_welcome_email(email)
+        if phone: send_welcome_sms(phone)
         db.reference(f'/subscribers/{key}').update({'welcome_sent': True})
 
 def handle_new_subscriber(event):
