@@ -37,7 +37,7 @@ const DataDownloader = ({ isDark = true, t }: DataDownloaderProps) => {
       "Temperature (°C)",
       "Humidity (%)",
       "Pressure (hPa)",
-      "Light Intensity (Lux)",
+      "Ambient Light (Lux)",
       "CO2 (ppm)",
       "PM1.0 (µg/m³)",
       "PM2.5 (µg/m³)",
